@@ -182,6 +182,17 @@ define([
         },
 
         getAddressParts: function (address) {
+            const streetParts = [address.street, address.houseNumber, address.houseNumberAddition ?? ''];
+
+            if (this.settings.split_street_values) {
+                const lastChildIndex = this.initChildCount - 1;
+
+                address.streetLines = streetParts.slice(0, lastChildIndex);
+                address.streetLines.push(streetParts.slice(lastChildIndex).join(' ').trim());
+            } else {
+                address.streetLines = [streetParts.join(' ').trim()];
+            }
+
             return {
                 ...address,
                 houseNumberAddition: address.houseNumberAddition ?? '',
