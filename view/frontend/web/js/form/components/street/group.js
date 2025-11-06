@@ -34,7 +34,8 @@ define([
             // Join remaining args for last or single child.
             values.push(args.slice(lastChildIndex).join(' ').trim());
 
-            values.forEach((v, i) => { Registry.async(`${this.name}.${i}`)('value', v); });
+            // NB. value is cast to string for correct length validation of house numbers.
+            values.forEach((v, i) => { Registry.async(`${this.name}.${i}`)('value', String(v)); });
         },
     });
 });
