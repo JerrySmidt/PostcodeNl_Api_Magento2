@@ -12,9 +12,14 @@
 </div>
 
 <script>
-    {
-        document.querySelector('#form-validate').appendChild(document.getElementById('block-loader-customer-address'));
-    }
+    document.addEventListener('DOMContentLoaded', () => {
+        const formValidate = document.querySelector('#form-validate');
+        const blockLoader = document.getElementById('block-loader-customer-address');
+        
+        if (formValidate && blockLoader) {
+            formValidate.appendChild(blockLoader);
+        }
+    });
 </script>
 
 <div class="fieldset address-autofill-fieldset" data-bind="scope: 'address_autofill'">
