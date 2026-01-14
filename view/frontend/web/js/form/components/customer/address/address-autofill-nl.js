@@ -120,21 +120,6 @@ define([
             }
         },
 
-        setInputAddress: function (address) {
-            const addressParts = this.getAddressParts(address);
-
-            for (let i = 0; i < address.streetLines.length; i++) {
-                this.inputs.street[i].value = address.streetLines[i];
-            }
-
-            this.inputs.city.value = addressParts.city;
-            this.inputs.postcode.value = addressParts.postcode;
-
-            if (this.inputs.region) {
-                this.inputs.region.value = addressParts.province;
-            }
-        },
-
         resetInputAddress: function () {
             this.inputs.toArray().forEach(input => { input.value = ''; });
         },

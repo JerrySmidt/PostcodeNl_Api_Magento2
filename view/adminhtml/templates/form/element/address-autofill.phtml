@@ -1,0 +1,53 @@
+<?php
+/**
+ * @var \Magento\Framework\Escaper $escaper
+ * @var \Magento\Backend\Block\Template $block
+ * @var \Magento\Framework\View\Helper\SecureHtmlRenderer $secureRenderer
+ */
+?>
+<div
+    class="order-address-autofill"
+    id="<?= $escaper->escapeHtmlAttr($block->getJsId()) ?>"
+    data-bind="scope: '<?= $escaper->escapeHtmlAttr($block->getNameInLayout()); ?>'"
+    data-mage-init='{"Magento_Ui/js/core/app": <?= $escaper->escapeHtml($block->getJsLayout()) ?>}'
+>
+    <!-- ko template: getTemplate() -->
+        <div class="admin__field-note">
+            <?= $escaper->escapeHtml(__('Loading…')) ?>
+        </div>
+    <!-- /ko -->
+</div>
+<?php
+
+// Workaround: cleanup stale instances and manually re-bind UI components
+// when the admin order form is reloaded via Ajax.
+$script = <<<js
+require(['knockout', 'uiRegistry', 'mage/apply/main'], function (ko, Registry, mageApply) {
+    const rootName = '{$escaper->escapeJs($block->getNameInLayout())}';
+
+    if (Registry.has(rootName)) {
+        // Remove each component from the JS layout hierarchy.
+        Registry.filter('ns = ' + rootName).forEach(component => {
+            if (typeof component.destroy === 'function') {
+                component.destroy(); // Avoids memory leaks.
+            }
+
+            Registry.remove(component.name);
+        });
+
+        const container = document.getElementById('{$escaper->escapeJs($block->getJsId())}');
+
+        // Manually trigger component application.
+        mageApply.apply(container);
+
+        // Clean node to allow fresh binding.
+        ko.cleanNode(container);
+
+        // Force a re-evaluation of the scope.
+        Registry.get(rootName, (newComponent) => ko.applyBindings(newComponent, container));
+    }
+});
+js;
+
+echo $secureRenderer->renderTag('script', [], $script, false);
+?>

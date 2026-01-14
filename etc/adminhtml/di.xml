@@ -7,4 +7,12 @@
             </argument>
         </arguments>
     </type>
+
+    <type name="Magento\Customer\Model\Metadata\Form">
+        <plugin name="flekto_postcode_sort_sales_order_address_fields" type="Flekto\Postcode\Plugin\SortSalesOrderAddressFields" sortOrder="10"/>
+    </type>
+
+    <type name="Magento\Sales\Block\Adminhtml\Order\Create\Form\Address">
+        <plugin name="flekto_postcode_add_address_autofill_to_sales_order_form" type="Flekto\Postcode\Plugin\AddAddressAutofillToOrderCreateForm" sortOrder="10"/>
+    </type>
 </config>

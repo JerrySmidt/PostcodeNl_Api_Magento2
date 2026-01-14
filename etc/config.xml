@@ -13,6 +13,7 @@
             <advanced_config>
                 <allow_pobox_shipping>1</allow_pobox_shipping>
                 <split_street_values>0</split_street_values>
+                <admin_address_autocomplete_behavior>default</admin_address_autocomplete_behavior>
             </advanced_config>
         </postcodenl_api>
     </default>

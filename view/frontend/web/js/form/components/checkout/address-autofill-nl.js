@@ -63,22 +63,14 @@ define([
 
         setInputAddress: function (address) {
             const addressParts = this.getAddressParts(address);
+            let streetLines = addressParts.streetParts;
 
-            // Result could be an old address from localStorage, without streetLines.
-            if (typeof addressParts.streetLines === 'undefined') {
-                addressParts.streetLines = [
-                    addressParts.street,
-                    addressParts.houseNumber,
-                    addressParts.houseNumberAddition,
-                ];
-
-                if (!this.settings.split_street_values) {
-                    addressParts.streetLines = [addressParts.streetLines.join(' ')];
-                }
+            if (!this.settings.split_street_values) {
+                streetLines = [streetLines.join(' ')];
             }
 
             // Street children may not yet be available at this point, so value needs to be set asynchronously.
-            this.street().asyncSetValues(...addressParts.streetLines);
+            this.street().asyncSetValues(...streetLines);
 
             this.city().value(addressParts.city);
             this.postcode().value(addressParts.postcode);
@@ -120,12 +112,10 @@ define([
         },
 
         validateAddress: function (address) {
-            const houseNumber = this.childHouseNumber();
-
             if (
                 this.settings.allow_pobox_shipping === false
                 && address.addressType === 'PO box'
-                && houseNumber.parentScope.split('.')[0] === 'shippingAddress'
+                && this.parentScope === 'shippingAddress'
             ) {
                 this.status(AddressNlModel.status.PO_BOX_SHIPPING_NOT_ALLOWED);
                 return false;

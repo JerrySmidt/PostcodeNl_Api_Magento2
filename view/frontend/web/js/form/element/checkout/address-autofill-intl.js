@@ -111,13 +111,13 @@ define([
             if (
                 this.settings.allow_pobox_shipping === false
                 && address.isPoBox
-                && this.parentScope.split('.')[0] === 'shippingAddress'
+                && this.parentScope === 'shippingAddress'
             ) {
                 this.error($t('Sorry, we cannot ship to a PO Box address.'));
                 return false;
             }
 
-            return this._super();
+            return this._super(address);
         },
 
     });

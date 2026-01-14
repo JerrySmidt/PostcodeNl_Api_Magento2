@@ -22,7 +22,7 @@ define([
             this._super();
 
             this.visible(this.isEnabledCountry(this.countryCode));
-            this.toggleFields(!this.visible());
+            this.toggleFields(!this.visible(), true);
 
             if (this.visible() && this.value() === '') {
                 const postcode = this.inputs.postcode.value,
@@ -62,21 +62,6 @@ define([
         onChangeCountry: function (countryCode) {
             if (this.isCountryChanged) {
                 return this._super(countryCode);
-            }
-        },
-
-        setInputAddress: function (result) {
-            for (let i = 0; i < result.streetLines.length; i++) {
-                this.inputs.street[i].value = result.streetLines[i];
-            }
-
-            this.inputs.city.value = result.address.locality;
-            this.inputs.postcode.value = result.address.postcode;
-
-            if (this.inputs.regionId && this.inputs.regionId.style.display !== 'none') {
-                this.inputs.regionId.value = result.region.id ?? '';
-            } else if (this.inputs.region && this.inputs.region.style.display !== 'none') {
-                this.inputs.region.value = result.region.name ?? '';
             }
         },
 

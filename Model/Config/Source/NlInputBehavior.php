@@ -13,8 +13,8 @@ class NlInputBehavior implements \Magento\Framework\Data\OptionSourceInterface
     public function toOptionArray(): array
     {
         return [
-            ['value' => 'zip_house', 'label' => __('Only zip code and house number (default)')],
-            ['value' => 'free', 'label' => __('Free address input')],
+            ['value' => static::ZIP_HOUSE, 'label' => __('Only zip code and house number (default)')],
+            ['value' => static::FREE, 'label' => __('Free address input')],
         ];
     }
 }

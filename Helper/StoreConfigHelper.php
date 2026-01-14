@@ -38,6 +38,7 @@ class StoreConfigHelper extends AbstractHelper
         'disabled_countries' => 'postcodenl_api/advanced_config/disabled_countries',
         'allow_pobox_shipping' => 'postcodenl_api/advanced_config/allow_pobox_shipping',
         'split_street_values' => 'postcodenl_api/advanced_config/split_street_values',
+        'admin_address_autocomplete_behavior' => 'postcodenl_api/advanced_config/admin_address_autocomplete_behavior',
     ];
 
     /**

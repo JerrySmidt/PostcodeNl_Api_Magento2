@@ -18,6 +18,7 @@ define([
                 autocompleteUrl: viewModel.settings.api_actions.autocomplete,
                 addressDetailsUrl: viewModel.settings.api_actions.addressDetails,
                 context: viewModel.countryCode || 'NL',
+                showLogo: viewModel.showLogo ?? true,
             });
 
             viewModel.inputElement = element;
@@ -71,3 +72,4 @@ define([
     renderer.addAttribute('initIntlAutocomplete');
 
 });
+
