@@ -69,10 +69,6 @@ class Status extends Template implements RendererInterface
         $this->_dataHelper = $dataHelper;
         $this->_updateNotifier = $updateNotifier;
 
-        $this->_cachedData = $this->_getCachedData();
-
-        $this->_notifyUpdate();
-
         parent::__construct($context, $data);
     }
 
@@ -85,6 +81,9 @@ class Status extends Template implements RendererInterface
      */
     public function render(AbstractElement $element): string
     {
+        $this->_cachedData = $this->_getCachedData();
+        $this->_notifyUpdate();
+
         /** @noinspection PhpUndefinedMethodInspection */
         $this->setElement($element);
 
