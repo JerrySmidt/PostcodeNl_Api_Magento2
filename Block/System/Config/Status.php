@@ -100,7 +100,7 @@ class Status extends Template implements RendererInterface
         return [
             'enabled' => $this->_storeConfigHelper->isEnabled(),
             'module_version' => $this->_storeConfigHelper->getModuleVersion(),
-            'supported_countries' => $this->_storeConfigHelper->getSupportedCountries(),
+            'supported_countries' => $this->_storeConfigHelper->getSupportedCountryNames(),
             'account_name' => $this->_storeConfigHelper->getValue('account_name'),
             'account_status' => $this->_storeConfigHelper->getValue('account_status'), // Defaults to "new", see etc/config.xml.
             'has_credentials' => $this->_storeConfigHelper->hasCredentials(),
@@ -137,17 +137,40 @@ class Status extends Template implements RendererInterface
         $status = $this->_storeConfigHelper->getValue('account_status');
 
         switch ($status) {
-            case \Flekto\Postcode\Helper\ApiClientHelper::API_ACCOUNT_STATUS_NEW:
-                return __('not connected');
-            case \Flekto\Postcode\Helper\ApiClientHelper::API_ACCOUNT_STATUS_ACTIVE:
+            case ApiClientHelper::API_ACCOUNT_STATUS_NEW:
+                return __('new');
+            case ApiClientHelper::API_ACCOUNT_STATUS_ACTIVE:
                 return __('active');
-            case \Flekto\Postcode\Helper\ApiClientHelper::API_ACCOUNT_STATUS_INVALID_CREDENTIALS:
+            case ApiClientHelper::API_ACCOUNT_STATUS_INVALID_CREDENTIALS:
                 return __('invalid key and/or secret');
-            case \Flekto\Postcode\Helper\ApiClientHelper::API_ACCOUNT_STATUS_INACTIVE:
+            case ApiClientHelper::API_ACCOUNT_STATUS_INACTIVE:
                 return __('inactive');
             default:
                 throw new Status\Exception(__('Invalid account status value.'));
         }
+    }
+
+    public function getApiStatusHint(): string
+    {
+        $status = $this->_storeConfigHelper->getValue('account_status');
+
+        switch ($status) {
+            case ApiClientHelper::API_ACCOUNT_STATUS_NEW:
+                return __('Enter your Postcode.eu API key and secret to connect.');
+            case ApiClientHelper::API_ACCOUNT_STATUS_ACTIVE:
+                return __('The Postcode.eu API is successfully connected.');
+            case ApiClientHelper::API_ACCOUNT_STATUS_INVALID_CREDENTIALS:
+                return __('The API key or secret is incorrect. Please check your credentials.');
+            case ApiClientHelper::API_ACCOUNT_STATUS_INACTIVE:
+                return __('Your Postcode.eu subscription is inactive. Please log in to your account to resolve this.');
+            default:
+                throw new Status\Exception(__('Invalid account status value.'));
+        }
+    }
+
+    public function isStatusActive(): bool
+    {
+        return $this->_storeConfigHelper->getValue('account_status') === ApiClientHelper::API_ACCOUNT_STATUS_ACTIVE;
     }
 
     /**
@@ -179,7 +202,7 @@ class Status extends Template implements RendererInterface
     private function _getAccountInfo(): array
     {
         $status = $this->_storeConfigHelper->getValue('account_status');
-        if ($status === \Flekto\Postcode\Helper\ApiClientHelper::API_ACCOUNT_STATUS_ACTIVE) {
+        if ($status === ApiClientHelper::API_ACCOUNT_STATUS_ACTIVE) {
             return $this->_apiClientHelper->getAccountInfo();
         }
 

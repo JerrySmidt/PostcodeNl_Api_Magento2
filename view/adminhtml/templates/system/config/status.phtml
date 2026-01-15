@@ -10,17 +10,18 @@ $moduleInfo = $block->getModuleInfo();
 
 ?><div class="postcode-eu-status-container">
     <div class="postcode-eu-status-header">
-        <h2>Address API</h2>
+        <h2><?= $escaper->escapeHtml(__('Address API')) ?></h2>
     </div>
 
     <div class="postcode-eu-status-content">
         <div class="postcode-eu-status-content-header">
             <p>
-                Module version <strong><?= $escaper->escapeHtml($moduleInfo['version']) ?></strong>
+                <?= $escaper->escapeHtml(__('Module version')) ?>
+                <strong><?= $escaper->escapeHtml($moduleInfo['version']) ?></strong>
                 <?php if ($moduleInfo['has_update']): ?>
                 <span class="update-available-message">
-                    ↻ <a href="<?= $escaper->escapeHtml($moduleInfo['release_url']) ?>"
-                         title="Please update to version <?= $escaper->escapeHtml($moduleInfo['latest_version']) ?>">
+                    ↻ <a href="<?= $escaper->escapeHtmlAttr($moduleInfo['release_url']) ?>"
+                        title="<?= $escaper->escapeHtmlAttr(__('Please update to version %1', [$moduleInfo['latest_version']])) ?>">
                          <?= $escaper->escapeHtml(__('update available')) ?>
                     </a>
                 </span>
@@ -38,18 +39,20 @@ $moduleInfo = $block->getModuleInfo();
         </div>
 
         <?php if (!$config['enabled']): ?>
-            <div class="message message-warning">Module is disabled via configuration.</div>
+            <div class="message message-warning">
+                <?= $escaper->escapeHtml(__('Module is disabled via configuration.')) ?>
+            </div>
         <?php endif ?>
 
         <?php if (isset($config['account_status'])): ?>
-            <h3>API connection</h3>
+            <h3><?= $escaper->escapeHtml(__('API connection')) ?></h3>
 
             <dl class="postcode-eu-api-connection">
                 <?php if (isset($accountInfo['name'])): ?>
-                    <dt>Account name</dt>
+                    <dt><?= $escaper->escapeHtml(__('Account name')) ?></dt>
                     <dd><?= $escaper->escapeHtml($accountInfo['name']) ?></dd>
                 <?php endif ?>
-                <dt>Subscription status</dt>
+                <dt><?= $escaper->escapeHtml(__('Subscription status')) ?></dt>
                 <dd>
                     <span class="badge-account-status badge-account-status-<?= /* @noEscape */ $config['account_status'] ?>">
                         <?= /* @noEscape */ $block->getApiStatusDescription() ?>
@@ -63,24 +66,31 @@ $moduleInfo = $block->getModuleInfo();
                             $low = round($limit * .75, 2);
                             $high = round($limit * .9, 2);
                         ?>
-                            <meter class="account-usage-meter"
-                                min="0"
-                                max="<?= /* @noEscape */ $limit ?>"
-                                value="<?= /* @noEscape */ $usage ?>"
-                                optimum="0"
-                                low="<?= /* @noEscape */ $low ?>"
-                                high="<?= /* @noEscape */ $high ?>"
-                                title="Usage at <?= /* @noEscape */ $usage_percent ?>%"></meter>
-                        <?= /* @noEscape */ $usage . ' / ' . /* @noEscape */ $limit ?> euro
+                        <meter class="account-usage-meter"
+                            min="0"
+                            max="<?= /* @noEscape */ $limit ?>"
+                            value="<?= /* @noEscape */ $usage ?>"
+                            optimum="0"
+                            low="<?= /* @noEscape */ $low ?>"
+                            high="<?= /* @noEscape */ $high ?>"
+                            title="<?= $escaper->escapeHtmlAttr(__('Usage at %1%', [$usage_percent])) ?>"></meter>
+                        <?= /* @noEscape */ $usage . ' / ' . /* @noEscape */ $limit ?>
+                        <?= $escaper->escapeHtml(__('euro')) ?>
                     <?php endif ?>
                 </dd>
             </dl>
 
-            <h3>Supported countries</h3>
+            <?php if (!$block->isStatusActive()): ?>
+                <div class="message message-notice">
+                    <?= $escaper->escapeHtml($block->getApiStatusHint()) ?>
+                </div>
+            <?php endif ?>
+
+            <h3><?= $escaper->escapeHtml(__('Supported countries')) ?></h3>
 
             <ul class="postcode-eu-supported-countries-list">
-                <?php foreach ($config['supported_countries'] as $country): ?>
-                    <li><?= /* @noEscape */ $country->name ?></li>
+                <?php foreach ($config['supported_countries'] as $name): ?>
+                    <li><?= $escaper->escapeHtml($name) ?></li>
                 <?php endforeach ?>
             </ul>
         <?php endif ?>

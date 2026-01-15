@@ -8,6 +8,8 @@ use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\StoreManagerInterface;
 use Magento\Developer\Helper\Data as DeveloperHelperData;
 use Magento\Framework\Encryption\EncryptorInterface;
+use Magento\Directory\Model\ResourceModel\Country\CollectionFactory as CountryCollectionFactory;
+use Magento\Framework\Locale\ResolverInterface;
 use Flekto\Postcode\Model\Config\Source\NlInputBehavior;
 use Flekto\Postcode\Model\Config\Source\ShowHideAddressFields;
 
@@ -16,6 +18,8 @@ class StoreConfigHelper extends AbstractHelper
     protected $_storeManager;
     protected $_developerHelper;
     protected $_encryptor;
+    protected $_countryCollectionFactory;
+    protected $_localeResolver;
 
     public const PATH = [
         // Status
@@ -44,18 +48,24 @@ class StoreConfigHelper extends AbstractHelper
     /**
      * @param Context $context
      * @param StoreManagerInterface $storeManager
-     * @param Data $developerHelper
+     * @param DeveloperHelperData $developerHelper
      * @param EncryptorInterface $encryptor
+     * @param CountryCollectionFactory $countryCollectionFactory
+     * @param ResolverInterface $localeResolver
      */
     public function __construct(
         Context $context,
         StoreManagerInterface $storeManager,
         DeveloperHelperData $developerHelper,
-        EncryptorInterface $encryptor
+        EncryptorInterface $encryptor,
+        CountryCollectionFactory $countryCollectionFactory,
+        ResolverInterface $localeResolver
     ) {
         $this->_storeManager = $storeManager;
         $this->_developerHelper = $developerHelper;
         $this->_encryptor = $encryptor;
+        $this->_countryCollectionFactory = $countryCollectionFactory;
+        $this->_localeResolver = $localeResolver;
         parent::__construct($context);
     }
 
@@ -121,6 +131,22 @@ class StoreConfigHelper extends AbstractHelper
         }
 
         return array_values(array_diff($supported, explode(',', $disabled)));
+    }
+
+    /**
+     * Get supported country names.
+     *
+     * @return array
+     */
+    public function getSupportedCountryNames(): array
+    {
+        $isoCodes = array_map(fn($country) => $country->iso2, $this->getSupportedCountries());
+        $collection = $this->_countryCollectionFactory->create()->addFieldToFilter('country_id', ['in' => $isoCodes]);
+        $locale = $this->_localeResolver->getLocale();
+        $names = array_map(fn($country) => $country->getName(), $collection->getItems());
+        \Collator::create($locale)->asort($names);
+
+        return $names;
     }
 
     /**

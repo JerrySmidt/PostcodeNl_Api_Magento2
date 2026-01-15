@@ -28,11 +28,8 @@ class DisabledCountries implements \Magento\Framework\Data\OptionSourceInterface
     {
         $options = [];
 
-        foreach ($this->_storeConfigHelper->getSupportedCountries() as $country) {
-            $options[] = [
-                'value' => $country->iso2,
-                'label' => $country->name,
-            ];
+        foreach ($this->_storeConfigHelper->getSupportedCountryNames() as $iso2 => $name) {
+            $options[] = ['value' => $iso2, 'label' => $name];
         }
 
         return $options;
