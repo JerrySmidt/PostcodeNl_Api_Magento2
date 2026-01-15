@@ -26,18 +26,26 @@ class AddAddressAutofillToOrderCreateForm
      */
     private $_dataHelper;
 
+    /**
+     * Constructor
+     *
+     * @param StoreConfigHelper $storeConfigHelper
+     * @param DataHelper $dataHelper
+     * @param DirectoryHelper $directoryHelper
+     */
     public function __construct(
         StoreConfigHelper $storeConfigHelper,
         DataHelper $dataHelper,
         DirectoryHelper $directoryHelper
-    )
-    {
+    ) {
         $this->_storeConfigHelper = $storeConfigHelper;
         $this->_dataHelper = $dataHelper;
         $this->_directoryHelper = $directoryHelper;
     }
 
     /**
+     * Add address autofill field to form
+     *
      * @param AddressBlock $subject
      * @param Form $form
      * @return Form
@@ -47,8 +55,7 @@ class AddAddressAutofillToOrderCreateForm
         $fieldset = $form->getElement('main');
         $autocompleteBehavior = $this->_storeConfigHelper->getValue('admin_address_autocomplete_behavior');
 
-        if (
-            $fieldset === null
+        if ($fieldset === null
             || $this->_dataHelper->isDisabled()
             || $autocompleteBehavior ===  AdminAddressAutocompleteBehavior::DISABLE
         ) {

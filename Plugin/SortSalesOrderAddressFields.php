@@ -39,8 +39,7 @@ class SortSalesOrderAddressFields
      */
     public function afterGetAttributes(Form $subject, array $result)
     {
-        if (
-            $this->_storeConfigHelper->isSetFlag('change_fields_position')
+        if ($this->_storeConfigHelper->isSetFlag('change_fields_position')
             && isset($result['country_id'])
             && strpos($this->_request->getFullActionName(), 'sales_order_create') !== false
         ) {

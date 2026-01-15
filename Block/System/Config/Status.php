@@ -150,6 +150,11 @@ class Status extends Template implements RendererInterface
         }
     }
 
+    /**
+     * Get hint about API status.
+     *
+     * @return string
+     */
     public function getApiStatusHint(): string
     {
         $status = $this->_storeConfigHelper->getValue('account_status');
@@ -168,6 +173,11 @@ class Status extends Template implements RendererInterface
         }
     }
 
+    /**
+     * Check if API status is active.
+     *
+     * @return bool
+     */
     public function isStatusActive(): bool
     {
         return $this->_storeConfigHelper->getValue('account_status') === ApiClientHelper::API_ACCOUNT_STATUS_ACTIVE;

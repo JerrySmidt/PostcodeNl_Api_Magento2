@@ -13,13 +13,14 @@ use Magento\Framework\View\LayoutInterface;
  */
 class AddressAutofill extends AbstractElement
 {
+    /** @var LayoutInterface */
     protected $_layout;
 
     /**
      * @param Factory $factoryElement
      * @param CollectionFactory $factoryCollection
      * @param Escaper $escaper
-     * @param LayoutInterface $layout,
+     * @param LayoutInterface $layout
      * @param array $data
      */
     public function __construct(
