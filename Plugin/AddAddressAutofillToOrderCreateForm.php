@@ -58,6 +58,7 @@ class AddAddressAutofillToOrderCreateForm
         if ($fieldset === null
             || $this->_dataHelper->isDisabled()
             || $autocompleteBehavior ===  AdminAddressAutocompleteBehavior::DISABLE
+            || $subject instanceof \Magento\Sales\Block\Adminhtml\Order\Address\Form // Exclude edit form.
         ) {
             return $form;
         }
