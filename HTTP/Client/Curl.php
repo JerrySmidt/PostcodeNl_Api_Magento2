@@ -7,4 +7,9 @@ namespace Flekto\Postcode\HTTP\Client;
  */
 class Curl extends \Magento\Framework\HTTP\Client\Curl
 {
+    /**
+     * Request timeout
+     * @var int type
+     */
+    protected $_timeout = 30;
 }

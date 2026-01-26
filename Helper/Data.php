@@ -10,7 +10,8 @@ use Magento\Framework\App\Helper\Context;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Filesystem\DirectoryList;
 use Magento\Framework\Filesystem\DriverInterface;
-use Magento\Framework\HTTP\Client\Curl;
+use Flekto\Postcode\HTTP\Client\Curl;
+use Flekto\Postcode\Service\Exception\CurlException;
 
 class Data extends AbstractHelper
 {
@@ -166,7 +167,12 @@ class Data extends AbstractHelper
             }
         }
 
-        $this->_curl->get(self::PACKAGIST_URL);
+        try {
+            $this->_curl->get(self::PACKAGIST_URL);
+        } catch (CurlException $e) {
+            throw new LocalizedException(__('Failed to fetch package data: %1', $e->getMessage()));
+        }
+
         $status = $this->_curl->getStatus();
         if ($status == 200) {
             $response = $this->_curl->getBody();
@@ -175,7 +181,12 @@ class Data extends AbstractHelper
                 throw new LocalizedException(__('Failed to write package data to %1.', $filePath));
             }
 
-            return json_decode($response, true);
+            $result = json_decode($response, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new LocalizedException(__('Invalid JSON response from Packagist.'));
+            }
+
+            return $result;
 
         } elseif ($status == 304) { // Not modified, use cached file.
             $data = $this->_fs->fileGetContents($filePath);
@@ -184,7 +195,12 @@ class Data extends AbstractHelper
                 throw new LocalizedException(__('Failed to read package data from %1.', $filePath));
             }
 
-            return json_decode($data, true);
+            $result = json_decode($data, true);
+            if (json_last_error() !== JSON_ERROR_NONE) {
+                throw new LocalizedException(__('Invalid cached JSON data.'));
+            }
+
+            return $result;
         }
 
         throw new LocalizedException(__('Unexpected status code %1 while fetching package data.', $status));

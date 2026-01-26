@@ -9,29 +9,10 @@ define([
     return Collection.extend({
 
         defaults: {
-            validatorInstance: $('#form-validate').validate(),
-            fieldset: document.getElementById('zip').closest('fieldset'),
-            fields: {
-                street: document.querySelector('.field.street'),
-                country: document.querySelector('.field.country'),
-                region: document.querySelector('.field.region'),
-                city: document.querySelector('[name=city]').closest('.field'), // Workaround missing city class.
-                postcode: document.querySelector('.field.zip'),
-            },
-            inputs: {
-                street: document.querySelectorAll('.field.street .input-text'),
-                country: document.getElementById('country'),
-                regionId: document.getElementById('region_id'),
-                region: document.getElementById('region'),
-                city: document.getElementById('city'),
-                postcode: document.getElementById('zip'),
-                toArray: function () {
-                    return [...this.street, this.city, this.postcode, this.regionId, this.region].filter((el) => el);
-                },
-                getStreetValue: function () {
-                    return [...this.street].map((input) => input.value).join(' ').trim();
-                },
-            },
+            validatorInstance: null,
+            fieldset: null,
+            fields: null,
+            inputs: null,
             listens: {
                 '${$.name}.address_autofill_intl:address': 'validateInputs',
                 '${$.name}.address_autofill_nl:address': 'validateInputs',
@@ -40,12 +21,37 @@ define([
                 countryCode: true,
                 isCountryChanged: true,
             },
-            countryCode: '${$.inputs.country.value}',
+            countryCode: null,
             isCountryChanged: false,
         },
 
         initialize: function () {
             this._super();
+
+            this.validatorInstance = $('#form-validate').validate();
+            this.fieldset = document.getElementById('zip').closest('fieldset');
+            this.fields = {
+                street: document.querySelector('.field.street'),
+                country: document.querySelector('.field.country'),
+                region: document.querySelector('.field.region'),
+                city: document.querySelector('[name=city]').closest('.field'), // Workaround missing city class.
+                postcode: document.querySelector('.field.zip'),
+            };
+            this.inputs = {
+                street: document.querySelectorAll('.field.street .input-text'),
+                country: document.getElementById('country'),
+                regionId: document.getElementById('region_id'),
+                region: document.getElementById('region'),
+                city: document.getElementById('city'),
+                postcode: document.getElementById('zip'),
+                toArray() {
+                    return [...this.street, this.city, this.postcode, this.regionId, this.region].filter((el) => el);
+                },
+                getStreetValue() {
+                    return [...this.street].map((input) => input.value).join(' ').trim();
+                },
+            };
+            this.countryCode = this.inputs.country.value;
 
             if (this.settings.change_fields_position) {
                 this.changeFieldsPosition();
@@ -53,10 +59,10 @@ define([
 
             this.moveToForm();
             this.validateComponentsOnSubmit();
-            this.inputs.country.addEventListener('change', function (e) {
+            this.inputs.country.addEventListener('change', (e) => {
                 this.isCountryChanged = true;
                 this.countryCode = e.target.value;
-            }.bind(this));
+            });
 
             return this;
         },

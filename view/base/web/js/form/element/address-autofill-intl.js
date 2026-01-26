@@ -1,8 +1,9 @@
 define([
     'Magento_Ui/js/form/element/abstract',
     'mage/translate',
+    'uiRegistry',
     'Flekto_Postcode/js/ko/bindings/init-intl-autocomplete',
-], function (Abstract, $t) {
+], function (Abstract, $t, Registry) {
     'use strict';
 
     return Abstract.extend({
@@ -17,6 +18,7 @@ define([
             additionalClasses: {
                 'address-autofill-intl-input': true,
             },
+            inputs: null,
         },
 
         initialize: function () {
@@ -81,7 +83,7 @@ define([
         isEnabledCountry: function (countryCode) {
             return (
                 this.settings.enabled_countries.includes(countryCode)
-                && !(countryCode === 'NL' && this.settings.nl_input_behavior === 'zip_house')
+                && !(countryCode === 'NL' && Registry.has(this.parentName + '.address_autofill_nl'))
             );
         },
 
@@ -96,6 +98,30 @@ define([
             }
 
             return true;
+        },
+
+        setInputAddress: function (result) {
+            if (this.inputs === null) {
+                return;
+            }
+
+            const setValue = (input, value) => {
+                input.value = value;
+                input.dispatchEvent(new Event('change', {bubbles: true}));
+            };
+
+            for (let i = 0; i < result.streetLines.length; i++) {
+                setValue(this.inputs.street[i], result.streetLines[i]);
+            }
+
+            setValue(this.inputs.city, result.address.locality);
+            setValue(this.inputs.postcode, result.address.postcode);
+
+            if (this.inputs.regionId && this.inputs.regionId.style.display !== 'none') {
+                setValue(this.inputs.regionId, result.region.id ?? '');
+            } else if (this.inputs.region && this.inputs.region.style.display !== 'none') {
+                setValue(this.inputs.region, result.region.name ?? '');
+            }
         },
 
     });

@@ -13,9 +13,9 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
-        const formValidate = document.querySelector('#form-validate');
-        const blockLoader = document.getElementById('block-loader-customer-address');
-        
+        const formValidate = document.querySelector('#form-validate'),
+            blockLoader = document.getElementById('block-loader-customer-address');
+
         if (formValidate && blockLoader) {
             formValidate.appendChild(blockLoader);
         }

@@ -22,6 +22,7 @@
                                                                 <item name="address_autofill_nl" xsi:type="array">
                                                                     <item name="component" xsi:type="string">Flekto_Postcode/js/form/components/checkout/address-autofill-nl</item>
                                                                     <item name="provider" xsi:type="string">checkoutProvider</item>
+                                                                    <item name="dataScope" xsi:type="string">shippingAddress.address_autofill_nl</item>
                                                                     <item name="deps" xsi:type="array">
                                                                         <item name="0" xsi:type="string">checkoutProvider</item>
                                                                     </item>
@@ -37,7 +38,7 @@
                                                                                 <item name="customScope" xsi:type="string">shippingAddress</item>
                                                                             </item>
                                                                             <item name="provider" xsi:type="string">checkoutProvider</item>
-                                                                            <item name="dataScope" xsi:type="string">shippingAddress.address_autofill_nl.postcode</item>
+                                                                            <item name="dataScope" xsi:type="string">postcode</item>
                                                                         </item>
                                                                         <item name="house_number" xsi:type="array">
                                                                             <item name="component" xsi:type="string">Flekto_Postcode/js/form/element/house-number</item>
@@ -46,7 +47,7 @@
                                                                                 <item name="customScope" xsi:type="string">shippingAddress</item>
                                                                             </item>
                                                                             <item name="provider" xsi:type="string">checkoutProvider</item>
-                                                                            <item name="dataScope" xsi:type="string">shippingAddress.address_autofill_nl.house_number</item>
+                                                                            <item name="dataScope" xsi:type="string">house_number</item>
                                                                         </item>
                                                                         <item name="house_number_select" xsi:type="array">
                                                                             <item name="component" xsi:type="string">Flekto_Postcode/js/form/element/house-number-select</item>
@@ -56,7 +57,7 @@
                                                                                 <item name="customScope" xsi:type="string">shippingAddress</item>
                                                                             </item>
                                                                             <item name="provider" xsi:type="string">checkoutProvider</item>
-                                                                            <item name="dataScope" xsi:type="string">shippingAddress.address_autofill_nl.house_number_select</item>
+                                                                            <item name="dataScope" xsi:type="string">house_number_select</item>
                                                                         </item>
                                                                     </item>
                                                                 </item>
