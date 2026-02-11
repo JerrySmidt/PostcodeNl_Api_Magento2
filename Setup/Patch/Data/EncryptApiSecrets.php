@@ -1,6 +1,6 @@
 <?php
 
-namespace Flekto\Postcode\Setup\Patch\Data;
+namespace PostcodeEu\AddressValidation\Setup\Patch\Data;
 
 use Magento\Framework\App\Config\ConfigResource\ConfigInterface;
 use Magento\Framework\Encryption\EncryptorInterface;
@@ -38,7 +38,7 @@ class EncryptApiSecrets implements DataPatchInterface
         $this->_resourceConfig->getConnection()->startSetup();
 
         $connection = $this->_resourceConfig->getConnection();
-        $path = \Flekto\Postcode\Helper\StoreConfigHelper::PATH['api_secret'];
+        $path = \PostcodeEu\AddressValidation\Helper\StoreConfigHelper::PATH['api_secret'];
         $select = $connection->select()
             ->from($this->_resourceConfig->getTable('core_config_data'))
             ->where('path = ?', $path);
@@ -62,7 +62,7 @@ class EncryptApiSecrets implements DataPatchInterface
      */
     public function getAliases(): array
     {
-        return [];
+        return ['Flekto\Postcode\Setup\Patch\Data\EncryptApiSecrets'];
     }
 
     /**

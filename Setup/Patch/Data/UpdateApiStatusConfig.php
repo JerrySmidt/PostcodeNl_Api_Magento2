@@ -1,9 +1,9 @@
 <?php
 
-namespace Flekto\Postcode\Setup\Patch\Data;
+namespace PostcodeEu\AddressValidation\Setup\Patch\Data;
 
-use Flekto\Postcode\Helper\ApiClientHelper;
-use Flekto\Postcode\Helper\StoreConfigHelper;
+use PostcodeEu\AddressValidation\Helper\ApiClientHelper;
+use PostcodeEu\AddressValidation\Helper\StoreConfigHelper;
 use Magento\Framework\App\Config\ConfigResource\ConfigInterface;
 use Magento\Framework\App\Config\Storage\WriterInterface;
 use Magento\Framework\Setup\Patch\DataPatchInterface;
@@ -44,7 +44,7 @@ class UpdateApiStatusConfig implements DataPatchInterface
      */
     public function getAliases(): array
     {
-        return [];
+        return ['Flekto\Postcode\Setup\Patch\Data\UpdateApiStatusConfig'];
     }
 
     /**
@@ -104,7 +104,7 @@ class UpdateApiStatusConfig implements DataPatchInterface
                         $this->_resourceConfig->saveConfig(StoreConfigHelper::PATH['account_status'], ApiClientHelper::API_ACCOUNT_STATUS_INACTIVE, $scope, $scopeId);
                     }
 
-                } catch (\Flekto\Postcode\Service\Exception\AuthenticationException $e) {
+                } catch (\PostcodeEu\AddressValidation\Service\Exception\AuthenticationException $e) {
 
                     $this->_resourceConfig->saveConfig(StoreConfigHelper::PATH['account_status'], ApiClientHelper::API_ACCOUNT_STATUS_INVALID_CREDENTIALS, $scope, $scopeId);
                 }
