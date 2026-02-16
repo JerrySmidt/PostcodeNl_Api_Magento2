@@ -48,7 +48,7 @@ class RebrandNotice implements MessageInterface
     {
         return (string)__(
             'Compatibility notice: The Postcode.eu Address Validation module has been rebranded. ' .
-            'The PHP namespace has changed from <code>PostcodeEu\AddressValidation</code> to <code>PostcodeEu\Postcode</code>. ' .
+            'The PHP namespace has changed from <code>Flekto\Postcode</code> to <code>PostcodeEu\AddressValidation</code>. ' .
             'Since your installation contains custom code or integrations relying on the old namespace, ' .
             'please update your references to ensure continued compatibility. '
         );
