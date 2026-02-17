@@ -80,8 +80,20 @@ class UpdateApiStatusConfig implements DataPatchInterface
 
         foreach ($scopeValues as $scope => $scopeIdValues) {
             foreach ($scopeIdValues as $scopeId => $credentials) {
-
                 if (empty($credentials[StoreConfigHelper::PATH['api_key']]) || empty($credentials[StoreConfigHelper::PATH['api_secret']])) {
+                    continue;
+                }
+
+                // Skip if already migrated
+                $existingStatus = $connection->fetchOne(
+                    $connection->select()
+                        ->from($this->_resourceConfig->getTable('core_config_data'), ['value'])
+                        ->where('path = ?', StoreConfigHelper::PATH['account_status'])
+                        ->where('scope = ?', $scope)
+                        ->where('scope_id = ?', $scopeId)
+                );
+
+                if ($existingStatus !== false) {
                     continue;
                 }
 

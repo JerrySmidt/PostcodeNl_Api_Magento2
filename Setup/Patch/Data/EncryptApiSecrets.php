@@ -48,6 +48,11 @@ class EncryptApiSecrets implements DataPatchInterface
                 continue;
             }
 
+            // Skip if already encrypted (Magento encrypted values start with '0:')
+            if (str_starts_with($row['value'], '0:')) {
+                continue;
+            }
+
             $encryptedSecret = $this->_encryptor->encrypt($row['value']);
             $this->_resourceConfig->saveConfig($path, $encryptedSecret, $row['scope'], $row['scope_id']);
         }
