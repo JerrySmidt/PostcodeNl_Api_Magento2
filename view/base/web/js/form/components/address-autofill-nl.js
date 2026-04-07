@@ -134,6 +134,7 @@ define([
             $.get({
                 url: url,
                 cache: true,
+                data: {form_key: this.settings.form_key},
                 dataType: 'json',
                 success: ([response]) => {
                     if (response.error) {

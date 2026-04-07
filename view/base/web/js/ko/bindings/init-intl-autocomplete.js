@@ -21,6 +21,26 @@ define([
                 showLogo: viewModel.showLogo ?? true,
             });
 
+            // Override methods to add form_key.
+            viewModel.intlAutocompleteInstance.getSuggestions = function (context, term, response) {
+                context = encodeURIComponent(context);
+                term = encodeURIComponent(term);
+
+                return this.xhrGet(
+                    `${this.options.autocompleteUrl}/${context}/${term}?form_key=${viewModel.settings.form_key}`,
+                    response
+                );
+            };
+
+            viewModel.intlAutocompleteInstance.getDetails = function (...args) {
+                const response = args.pop();
+
+                return this.xhrGet(
+                    `${this.options.addressDetailsUrl}/${args.join('/')}?form_key=${viewModel.settings.form_key}`,
+                    response
+                );
+            };
+
             viewModel.inputElement = element;
 
             function getAddressDetails(context, callback) {
@@ -65,6 +85,10 @@ define([
             element.addEventListener('autocomplete-search', () => {
                 viewModel.resetInputAddress();
                 viewModel.address(null);
+            });
+
+            element.addEventListener('autocomplete-xhr-send', ({detail: xhr}) => {
+                xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
             });
         }
     };

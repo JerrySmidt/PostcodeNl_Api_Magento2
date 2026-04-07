@@ -4,14 +4,16 @@ define([
     'use strict';
 
     function validateAddress(country, streetAndBuilding, postcode, locality) {
-        const params = [
+        const settings = Registry.get('address_autofill').settings,
+            params = [
                 'streetAndBuilding=' + encodeURIComponent(streetAndBuilding ?? ''),
                 'postcode=' + encodeURIComponent(postcode ?? ''),
                 'locality=' + encodeURIComponent(locality ?? ''),
+                'form_key=' + settings.form_key,
             ].join('&'),
-            url = `${Registry.get('address_autofill').settings.api_actions.validate}/${country}?${params}`;
+            url = `${settings.api_actions.validate}/${country}?${params}`;
 
-        return fetch(url).then((response) => {
+        return fetch(url, {headers: {'X-Requested-With': 'XMLHttpRequest'}}).then((response) => {
             if (response.ok)
             {
                 return response.json();

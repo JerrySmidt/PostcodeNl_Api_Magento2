@@ -2,14 +2,15 @@
 
 namespace PostcodeEu\AddressValidation\Helper;
 
+use Magento\Developer\Helper\Data as DeveloperHelperData;
+use Magento\Directory\Model\ResourceModel\Country\CollectionFactory as CountryCollectionFactory;
 use Magento\Framework\App\Helper\AbstractHelper;
 use Magento\Framework\App\Helper\Context;
+use Magento\Framework\Data\Form\FormKey;
+use Magento\Framework\Encryption\EncryptorInterface;
+use Magento\Framework\Locale\ResolverInterface;
 use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\StoreManagerInterface;
-use Magento\Developer\Helper\Data as DeveloperHelperData;
-use Magento\Framework\Encryption\EncryptorInterface;
-use Magento\Directory\Model\ResourceModel\Country\CollectionFactory as CountryCollectionFactory;
-use Magento\Framework\Locale\ResolverInterface;
 use PostcodeEu\AddressValidation\Model\Config\Source\NlInputBehavior;
 use PostcodeEu\AddressValidation\Model\Config\Source\ShowHideAddressFields;
 
@@ -20,6 +21,7 @@ class StoreConfigHelper extends AbstractHelper
     protected $_encryptor;
     protected $_countryCollectionFactory;
     protected $_localeResolver;
+    protected $_formKey;
 
     public const PATH = [
         // Status
@@ -52,6 +54,7 @@ class StoreConfigHelper extends AbstractHelper
      * @param EncryptorInterface $encryptor
      * @param CountryCollectionFactory $countryCollectionFactory
      * @param ResolverInterface $localeResolver
+     * @param FormKey $formKey
      */
     public function __construct(
         Context $context,
@@ -59,13 +62,15 @@ class StoreConfigHelper extends AbstractHelper
         DeveloperHelperData $developerHelper,
         EncryptorInterface $encryptor,
         CountryCollectionFactory $countryCollectionFactory,
-        ResolverInterface $localeResolver
+        ResolverInterface $localeResolver,
+        FormKey $formKey,
     ) {
         $this->_storeManager = $storeManager;
         $this->_developerHelper = $developerHelper;
         $this->_encryptor = $encryptor;
         $this->_countryCollectionFactory = $countryCollectionFactory;
         $this->_localeResolver = $localeResolver;
+        $this->_formKey = $formKey;
         parent::__construct($context);
     }
 
@@ -220,6 +225,7 @@ class StoreConfigHelper extends AbstractHelper
             'change_fields_position' => $this->isSetFlag('change_fields_position'),
             'allow_pobox_shipping' => $this->isSetFlag('allow_pobox_shipping'),
             'split_street_values' => $this->isSetFlag('split_street_values'),
+            'form_key' => $this->_formKey->getFormKey(),
         ];
     }
 
