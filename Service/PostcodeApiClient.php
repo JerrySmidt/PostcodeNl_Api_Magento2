@@ -213,6 +213,10 @@ class PostcodeApiClient
             'streetAndBuilding' => $streetAndBuilding,
         ], fn($value) => $value !== null);
 
+        if (!in_array(strtoupper($country), array_column($this->_storeConfigHelper->getSupportedCountries(), 'iso3'))) {
+            throw new BadRequestException('Country not supported', 400);
+        }
+
         return $this->_fetch(
             sprintf(
                 'international/v1/validate/%s?%s',

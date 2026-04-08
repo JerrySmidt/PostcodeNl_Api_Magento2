@@ -378,8 +378,11 @@ class ApiClientHelper extends AbstractHelper
      */
     private function _handleClientException(\Exception $exception): array
     {
-        if (!$exception instanceof \PostcodeEu\AddressValidation\Service\Exception\NotFoundException) {
+        if ($exception instanceof NotFoundException) {
+            $this->_response->setHttpResponseCode(404);
+        } else {
             $this->_logger->error($exception->getMessage(), ['exception' => $exception]);
+            $this->_response->setHttpResponseCode(400);
         }
 
         $result = ['error' => true, 'message' => __('Something went wrong. Please try again.')];
