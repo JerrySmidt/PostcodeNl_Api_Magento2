@@ -303,7 +303,6 @@ class ApiClientHelper extends AbstractHelper
         }
 
         try {
-
             $client = $this->getApiClient();
             $address = $client->dutchAddressByPostcode($zipCode, $houseNumber, $houseNumberAddition);
             $status = 'valid';
@@ -312,6 +311,7 @@ class ApiClientHelper extends AbstractHelper
                 || (!empty($address['houseNumberAdditions']) && null === $address['houseNumberAddition'])
             ) {
                 $status = 'houseNumberAdditionIncorrect';
+                $unknownHouseNumberAddition = $houseNumberAddition;
             }
         } catch (NotFoundException $e) {
             return ['status' => 'notFound', 'address' => null];
@@ -322,12 +322,18 @@ class ApiClientHelper extends AbstractHelper
         $formattedHouseNumberAdditions = [];
 
         foreach ($address['houseNumberAdditions'] ?? [] as $addition) {
-            $houseNumberWithAddition = rtrim($address['houseNumber'] . ' ' . $addition);
-            $formattedHouseNumberAdditions[] = [
-                'label' => $houseNumberWithAddition,
-                'value' => $houseNumberWithAddition,
-                'houseNumberAddition' => $addition,
-            ];
+            $formattedHouseNumberAdditions[] = $this->_formatHouseNumberAdditionOption(
+                $address['houseNumber'],
+                $addition
+            );
+        }
+
+        if (isset($unknownHouseNumberAddition)) {
+            $formattedHouseNumberAdditions[] = $this->_formatHouseNumberAdditionOption(
+                $address['houseNumber'],
+                $unknownHouseNumberAddition,
+                '(' . __('unknown addition') . ')'
+            );
         }
 
         $address['houseNumberAdditions'] = $formattedHouseNumberAdditions;
@@ -342,6 +348,25 @@ class ApiClientHelper extends AbstractHelper
         $result = ['address' => $address, 'status' => $status];
 
         return $this->_prepareResponse($result, $client);
+    }
+
+    /**
+     * Format house number with addition for use in select UI component.
+     *
+     * @access private
+     * @param int $houseNumber
+     * @param string $addition
+     * @param string $labelSuffix - Additional text to append to the label.
+     * @return array
+     */
+    private function _formatHouseNumberAdditionOption(int $houseNumber, string $addition, string $labelSuffix = null): array
+    {
+        $houseNumberWithAddition = rtrim($houseNumber . ' ' . $addition);
+        return [
+            'label' => rtrim($houseNumberWithAddition . ' ' . ($labelSuffix ?? '')),
+            'value' => $houseNumberWithAddition,
+            'houseNumberAddition' => $addition,
+        ];
     }
 
     /**
