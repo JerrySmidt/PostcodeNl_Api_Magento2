@@ -116,7 +116,7 @@ define([
             return AddressNlModel.houseNumberRegex.test(this.childHouseNumber().value());
         },
 
-        getAddress: function () {
+        getAddress: function (acceptUnknownAddition = false) {
             const postcode = encodeURIComponent(
                     AddressNlModel.postcodeRegex.exec(this.childPostcode().value())[0].replace(/\s/g, '')
                 ),
@@ -153,7 +153,15 @@ define([
                     this.address(response.address);
 
                     if (this.status() === AddressNlModel.status.ADDITION_INCORRECT) {
-                        this.childHouseNumberSelect().setOptions(response.address.houseNumberAdditions);
+                        if (acceptUnknownAddition) {
+                            this.status(AddressNlModel.status.VALID);
+                            this.address().houseNumberAddition = AddressNlModel.houseNumberRegex.exec(
+                                this.childHouseNumber().value()
+                            )[1].trim();
+                            this.address.valueHasMutated();
+                        } else {
+                            this.childHouseNumberSelect().setOptions(response.address.houseNumberAdditions);
+                        }
                     } else {
                         this.toggleFields(true);
                     }

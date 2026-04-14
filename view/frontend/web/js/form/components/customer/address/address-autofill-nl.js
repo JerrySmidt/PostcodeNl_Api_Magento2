@@ -23,7 +23,7 @@ define([
 
             if (this.countryCode === 'NL') {
                 Promise.all([this.prefillPostcode(), this.prefillHouseNumber()])
-                    .then(this.getAddress.bind(this))
+                    .then(() => this.getAddress(true))
                     .catch(() => {
                         if (AddressNlModel.houseNumberRegex.test(this.inputs.getStreetValue())) {
                             // Fall back to Validate API for ambiguous house number cases.
