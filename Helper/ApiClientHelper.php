@@ -564,18 +564,16 @@ class ApiClientHelper extends AbstractHelper
         ];
 
         // Module version
-        $debug['moduleVersion'] = $this->_storeConfigHelper->getModuleVersion();
+        $debug['module_version'] = $this->_storeConfigHelper->getModuleVersion();
 
         // Magento version
         $version = $this->_productMetadata->getVersion();
 
-        $debug['magentoVersion'] = 'Magento/' . $version;
+        $debug['magento_version'] = 'Magento/' . $version;
         if ($this->_getModuleInfo('Enterprise_CatalogPermissions') !== null) {
-            $debug['magentoVersion'] = 'MagentoEnterprise/' . $version;
-
+            $debug['magento_version'] = 'MagentoEnterprise/' . $version;
         } elseif ($this->_getModuleInfo('Enterprise_Enterprise') !== null) {
-
-            $debug['magentoVersion'] = 'MagentoProfessional/' . $version;
+            $debug['magento_version'] = 'MagentoProfessional/' . $version;
         }
 
         $debug['client'] = $this->getApiClient()->getUserAgent();

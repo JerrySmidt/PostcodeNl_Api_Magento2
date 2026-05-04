@@ -27,6 +27,7 @@ define([
                 term = encodeURIComponent(term);
 
                 return this.xhrGet(
+                    // See client/helper for language and buildingListMode parameters.
                     `${this.options.autocompleteUrl}/${context}/${term}?form_key=${viewModel.settings.form_key}`,
                     response
                 );

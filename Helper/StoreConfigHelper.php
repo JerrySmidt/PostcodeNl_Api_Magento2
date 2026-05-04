@@ -6,6 +6,8 @@ use Magento\Developer\Helper\Data as DeveloperHelperData;
 use Magento\Directory\Model\ResourceModel\Country\CollectionFactory as CountryCollectionFactory;
 use Magento\Framework\App\Helper\AbstractHelper;
 use Magento\Framework\App\Helper\Context;
+use Magento\Backend\Model\UrlInterface as BackendUrlInterface;
+use Magento\Framework\App\State as AppState;
 use Magento\Framework\Data\Form\FormKey;
 use Magento\Framework\Encryption\EncryptorInterface;
 use Magento\Framework\Locale\ResolverInterface;
@@ -22,6 +24,8 @@ class StoreConfigHelper extends AbstractHelper
     protected $_countryCollectionFactory;
     protected $_localeResolver;
     protected $_formKey;
+    protected $_appState;
+    protected $_backendUrl;
 
     public const PATH = [
         // Status
@@ -55,6 +59,8 @@ class StoreConfigHelper extends AbstractHelper
      * @param CountryCollectionFactory $countryCollectionFactory
      * @param ResolverInterface $localeResolver
      * @param FormKey $formKey
+     * @param AppState $appState
+     * @param BackendUrlInterface $backendUrl
      */
     public function __construct(
         Context $context,
@@ -64,6 +70,8 @@ class StoreConfigHelper extends AbstractHelper
         CountryCollectionFactory $countryCollectionFactory,
         ResolverInterface $localeResolver,
         FormKey $formKey,
+        AppState $appState,
+        BackendUrlInterface $backendUrl
     ) {
         $this->_storeManager = $storeManager;
         $this->_developerHelper = $developerHelper;
@@ -71,6 +79,8 @@ class StoreConfigHelper extends AbstractHelper
         $this->_countryCollectionFactory = $countryCollectionFactory;
         $this->_localeResolver = $localeResolver;
         $this->_formKey = $formKey;
+        $this->_appState = $appState;
+        $this->_backendUrl = $backendUrl;
         parent::__construct($context);
     }
 
@@ -208,19 +218,37 @@ class StoreConfigHelper extends AbstractHelper
     public function getJsinit(): array
     {
         $baseUrl = $this->getCurrentStoreBaseUrl();
-        $apiBaseUrl = $baseUrl . 'postcode-eu/V1/';
+        $isAdmin = false;
+
+        try {
+            $isAdmin = $this->_appState->getAreaCode() === \Magento\Backend\App\Area\FrontNameResolver::AREA_CODE;
+        } catch (\Magento\Framework\Exception\LocalizedException $e) {
+            // Area code not set
+        }
+
+        if ($isAdmin) {
+            $apiBaseUrl = $this->_backendUrl->getUrl('postcode_eu/address/api');
+            $apiActions = [
+                'dutchAddressLookup' => $apiBaseUrl . 'postcode',
+                'autocomplete' => $apiBaseUrl . 'autocomplete',
+                'addressDetails' => $apiBaseUrl . 'address_details',
+            ];
+        } else {
+            $apiBaseUrl = $baseUrl . 'postcode-eu/V1/';
+            $apiActions = [
+                'dutchAddressLookup' => $apiBaseUrl . 'nl/address',
+                'autocomplete' => $apiBaseUrl . 'international/autocomplete',
+                'addressDetails' => $apiBaseUrl . 'international/address',
+                'validate' => $apiBaseUrl . 'international/validate',
+            ];
+        }
 
         return [
             'enabled_countries' => $this->getEnabledCountries(),
             'nl_input_behavior' => $this->getValue('nl_input_behavior') ?? NlInputBehavior::ZIP_HOUSE,
             'show_hide_address_fields' => $this->getValue('show_hide_address_fields') ?? ShowHideAddressFields::SHOW,
             'base_url' => $baseUrl,
-            'api_actions' => [
-                'dutchAddressLookup' => $apiBaseUrl . 'nl/address',
-                'autocomplete' => $apiBaseUrl . 'international/autocomplete',
-                'addressDetails' => $apiBaseUrl . 'international/address',
-                'validate' => $apiBaseUrl . 'international/validate',
-            ],
+            'api_actions' => $apiActions,
             'debug' => $this->isDebugging(),
             'change_fields_position' => $this->isSetFlag('change_fields_position'),
             'allow_pobox_shipping' => $this->isSetFlag('allow_pobox_shipping'),

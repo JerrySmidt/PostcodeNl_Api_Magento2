@@ -12,15 +12,11 @@ use PostcodeEu\AddressValidation\Service\CsrfValidator;
 
 class PostcodeModel implements PostcodeModelInterface
 {
+    protected ApiClientHelper $_apiClientHelper;
     protected CsrfValidator $_csrfValidator;
 
     /**
-     * @var ApiClientHelper
-     */
-    protected $apiClientHelper;
-
-    /**
-     * __construct function.
+     * Constructor
      *
      * @access public
      * @param ApiClientHelper $apiClientHelper
@@ -31,7 +27,7 @@ class PostcodeModel implements PostcodeModelInterface
         CsrfValidator $csrfValidator
     )
     {
-        $this->apiClientHelper = $apiClientHelper;
+        $this->_apiClientHelper = $apiClientHelper;
         $this->_csrfValidator = $csrfValidator;
     }
 
@@ -42,7 +38,7 @@ class PostcodeModel implements PostcodeModelInterface
     {
         $this->_validateRequest();
 
-        $result = $this->apiClientHelper->getAddressAutocomplete($context, $term);
+        $result = $this->_apiClientHelper->getAddressAutocomplete($context, $term);
         return new AutocompleteData($result);
     }
 
@@ -53,7 +49,7 @@ class PostcodeModel implements PostcodeModelInterface
     {
         $this->_validateRequest();
 
-        $result = $this->apiClientHelper->getAddressDetails($context);
+        $result = $this->_apiClientHelper->getAddressDetails($context);
         return [$result];
     }
 
@@ -64,7 +60,7 @@ class PostcodeModel implements PostcodeModelInterface
     {
         $this->_validateRequest();
 
-        $result = $this->apiClientHelper->getAddressDetails($context, $dispatchCountry);
+        $result = $this->_apiClientHelper->getAddressDetails($context, $dispatchCountry);
         return [$result];
     }
 
@@ -75,7 +71,7 @@ class PostcodeModel implements PostcodeModelInterface
     {
         $this->_validateRequest();
 
-        $result = $this->apiClientHelper->getNlAddress($zipCode, $houseNumber);
+        $result = $this->_apiClientHelper->getNlAddress($zipCode, $houseNumber);
         return [$result];
     }
 
@@ -93,7 +89,7 @@ class PostcodeModel implements PostcodeModelInterface
     ): array {
         $this->_validateRequest();
 
-        $result = $this->apiClientHelper->validateAddress(...func_get_args());
+        $result = $this->_apiClientHelper->validateAddress(...func_get_args());
         return [$result];
     }
 
