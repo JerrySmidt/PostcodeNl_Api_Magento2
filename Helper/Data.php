@@ -68,54 +68,58 @@ class Data extends AbstractHelper
      * Check if formatted output is disabled.
      *
      * @access public
+     * @param int|string|null $storeId
      * @return bool
      */
-    public function isFormattedOutputDisabled(): bool
+    public function isFormattedOutputDisabled($storeId = null): bool
     {
         return
-            $this->isDisabled()
-            || ShowHideAddressFields::FORMAT != $this->_storeConfigHelper->getValue('show_hide_address_fields');
+            $this->isDisabled($storeId)
+            || ShowHideAddressFields::FORMAT != $this->_storeConfigHelper->getValue('show_hide_address_fields', $storeId);
     }
 
     /**
      * Check if Dutch API component is disabled.
      *
      * @access public
+     * @param int|string|null $storeId
      * @return bool
      */
-    public function isNlComponentDisabled(): bool
+    public function isNlComponentDisabled($storeId = null): bool
     {
         return
-            $this->isDisabled()
-            || false === in_array('NL', $this->_storeConfigHelper->getEnabledCountries())
-            || NlInputBehavior::ZIP_HOUSE != $this->_storeConfigHelper->getValue('nl_input_behavior');
+            $this->isDisabled($storeId)
+            || false === in_array('NL', $this->_storeConfigHelper->getEnabledCountries($storeId))
+            || NlInputBehavior::ZIP_HOUSE != $this->_storeConfigHelper->getValue('nl_input_behavior', $storeId);
     }
 
     /**
      * Check if the module is disabled.
      *
      * @access public
+     * @param int|string|null $storeId
      * @return bool
      */
-    public function isDisabled(): bool
+    public function isDisabled($storeId = null): bool
     {
         return
-            false === $this->_storeConfigHelper->isSetFlag('enabled')
-            || ApiClientHelper::API_ACCOUNT_STATUS_ACTIVE != $this->_storeConfigHelper->getValue('account_status');
+            false === $this->_storeConfigHelper->isSetFlag('enabled', $storeId)
+            || ApiClientHelper::API_ACCOUNT_STATUS_ACTIVE != $this->_storeConfigHelper->getValue('account_status', $storeId);
     }
 
     /**
      * Check if autofill bypass is disabled.
      *
      * @access public
+     * @param int|string|null $storeId
      * @return bool
      */
-    public function isAutofillBypassDisabled(): bool
+    public function isAutofillBypassDisabled($storeId = null): bool
     {
         return
-            $this->isDisabled()
-            || ShowHideAddressFields::SHOW == $this->_storeConfigHelper->getValue('show_hide_address_fields')
-            || $this->_storeConfigHelper->isSetFlag('allow_autofill_bypass') === false;
+            $this->isDisabled($storeId)
+            || ShowHideAddressFields::SHOW == $this->_storeConfigHelper->getValue('show_hide_address_fields', $storeId)
+            || $this->_storeConfigHelper->isSetFlag('allow_autofill_bypass', $storeId) === false;
     }
 
     /**
@@ -131,7 +135,7 @@ class Data extends AbstractHelper
             $data = $this->_getPackageData();
             $latest_version = $data['packages'][self::VENDOR_PACKAGE][0]['version'];
         } catch (LocalizedException $e) {
-            $this->_logger->error(__('Failed to get package data: "%1".', $e->getMessage()));
+            $this->_logger->error('Failed to get package data:', ['exception' => $e]);
             $latest_version = $version;
         }
 

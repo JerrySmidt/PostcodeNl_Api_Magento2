@@ -52,11 +52,12 @@ class AddAddressAutofillToOrderCreateForm
      */
     public function afterGetForm(AddressBlock $subject, Form $form)
     {
+        $storeId = $subject->getStoreId();
         $fieldset = $form->getElement('main');
-        $autocompleteBehavior = $this->_storeConfigHelper->getValue('admin_address_autocomplete_behavior');
+        $autocompleteBehavior = $this->_storeConfigHelper->getValue('admin_address_autocomplete_behavior', $storeId);
 
         if ($fieldset === null
-            || $this->_dataHelper->isDisabled()
+            || $this->_dataHelper->isDisabled($storeId)
             || $autocompleteBehavior ===  AdminAddressAutocompleteBehavior::DISABLE
             || $subject instanceof \Magento\Sales\Block\Adminhtml\Order\Address\Form // Exclude edit form.
         ) {
@@ -70,7 +71,7 @@ class AddAddressAutofillToOrderCreateForm
         $addressType = $subject->getIsShipping() ? 'shipping' : 'billing';
         $fieldId = $addressType . '_address_autofill';
         $countryId = $subject->getAddress()->getCountryId() ?? $this->_directoryHelper->getDefaultCountry();
-        $isVisible = in_array($countryId, $this->_storeConfigHelper->getEnabledCountries());
+        $isVisible = in_array($countryId, $this->_storeConfigHelper->getEnabledCountries($storeId));
 
         if ($autocompleteBehavior !== AdminAddressAutocompleteBehavior::DEFAULT) {
             $isNlComponentDisabled = $autocompleteBehavior === AdminAddressAutocompleteBehavior::SINGLE_INPUT;
@@ -81,14 +82,14 @@ class AddAddressAutofillToOrderCreateForm
                 $fieldId,
                 'postcode-eu-address-autofill',
                 [
-                    'settings' => $this->_storeConfigHelper->getJsinit(),
+                    'settings' => $this->_storeConfigHelper->getJsinit($storeId),
                     'htmlIdPrefix' => $form->getHtmlIdPrefix(),
                     'addressType' => $addressType,
                     'label' => __('Address autocomplete'),
                     'countryCode' => $countryId,
                     'visible' => $isVisible,
                     'css_class' => $isVisible ? '' : 'hidden',
-                    'isNlComponentDisabled' => $isNlComponentDisabled ?? $this->_dataHelper->isNlComponentDisabled(),
+                    'isNlComponentDisabled' => $isNlComponentDisabled ?? $this->_dataHelper->isNlComponentDisabled($storeId),
                 ],
                 'country_id',
             );

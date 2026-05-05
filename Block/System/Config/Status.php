@@ -191,13 +191,15 @@ class Status extends Template implements RendererInterface
     private function _getCachedData(): array
     {
         $cache = $this->_cacheFrontendPool->get(\Magento\Framework\App\Cache\Type\Config::TYPE_IDENTIFIER);
-        $cachedData = $cache->load(self::CACHE_ID);
+        [$scopeType, $scopeId] = $this->_storeConfigHelper->getScopeFromRequest();
+        $cacheId = implode('-', [self::CACHE_ID, $scopeType, $scopeId]);
+        $cachedData = $cache->load($cacheId);
 
         if ($cachedData === false) {
             $data = [];
             $data['accountInfo'] = $this->_getAccountInfo();
             $data['moduleInfo'] = $this->_dataHelper->getModuleInfo();
-            $cache->save($this->_serializer->serialize($data), self::CACHE_ID, [], self::CACHE_LIFETIME_SECONDS);
+            $cache->save($this->_serializer->serialize($data), $cacheId, [], self::CACHE_LIFETIME_SECONDS);
             return $data;
         }
 

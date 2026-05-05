@@ -2,11 +2,11 @@
 
 namespace PostcodeEu\AddressValidation\Helper;
 
+use Magento\Backend\Model\UrlInterface as BackendUrlInterface;
 use Magento\Developer\Helper\Data as DeveloperHelperData;
 use Magento\Directory\Model\ResourceModel\Country\CollectionFactory as CountryCollectionFactory;
 use Magento\Framework\App\Helper\AbstractHelper;
 use Magento\Framework\App\Helper\Context;
-use Magento\Backend\Model\UrlInterface as BackendUrlInterface;
 use Magento\Framework\App\State as AppState;
 use Magento\Framework\Data\Form\FormKey;
 use Magento\Framework\Encryption\EncryptorInterface;
@@ -89,11 +89,13 @@ class StoreConfigHelper extends AbstractHelper
      *
      * @access public
      * @param string $path - Full path or alias as specified in PATH constant.
+     * @param int|string|null $storeId
      * @return string|null
      */
-    public function getValue($path): ?string
+    public function getValue($path, $storeId = null): ?string
     {
-        return $this->scopeConfig->getValue(static::PATH[$path] ?? $path, ScopeInterface::SCOPE_STORE);
+        [$scopeType, $scopeCode] = $this->_getScopeContext($storeId);
+        return $this->scopeConfig->getValue(static::PATH[$path] ?? $path, $scopeType, $scopeCode);
     }
 
     /**
@@ -101,45 +103,50 @@ class StoreConfigHelper extends AbstractHelper
      *
      * @access public
      * @param string $path - Full path or alias as specified in PATH constant.
+     * @param int|string|null $storeId
      * @return bool
      */
-    public function isSetFlag($path): bool
+    public function isSetFlag($path, $storeId = null): bool
     {
-        return $this->scopeConfig->isSetFlag(static::PATH[$path] ?? $path, ScopeInterface::SCOPE_STORE);
+        [$scopeType, $scopeCode] = $this->_getScopeContext($storeId);
+        return $this->scopeConfig->isSetFlag(static::PATH[$path] ?? $path, $scopeType, $scopeCode);
     }
 
     /**
      * Get enabled status.
      *
      * @access public
+     * @param int|string|null $storeId
      * @return bool
      */
-    public function isEnabled(): bool
+    public function isEnabled($storeId = null): bool
     {
-        return $this->isSetFlag('enabled');
+        return $this->isSetFlag('enabled', $storeId);
     }
 
     /**
      * Get supported countries from config.
      *
      * @access public
+     * @param int|string|null $storeId
      * @return array
      */
-    public function getSupportedCountries(): array
+    public function getSupportedCountries($storeId = null): array
     {
-        return json_decode($this->getValue('supported_countries') ?? '[]');
+        return json_decode($this->getValue('supported_countries', $storeId) ?? '[]');
     }
 
     /**
      * Get supported countries, excluding disabled countries.
      *
      * @access public
+     * @param int|string|null $storeId
      * @return array
      */
-    public function getEnabledCountries(): array
+    public function getEnabledCountries($storeId = null): array
     {
-        $supported = array_column($this->getSupportedCountries(), 'iso2');
-        $disabled = $this->getValue('disabled_countries');
+        $supported = array_column($this->getSupportedCountries($storeId), 'iso2');
+        $disabled = $this->getValue('disabled_countries', $storeId);
 
         if (empty($disabled)) {
             return $supported;
@@ -213,11 +220,12 @@ class StoreConfigHelper extends AbstractHelper
      * Get settings to be used in frontend.
      *
      * @access public
+     * @param int|string|null $storeId
      * @return array
      */
-    public function getJsinit(): array
+    public function getJsinit($storeId = null): array
     {
-        $baseUrl = $this->getCurrentStoreBaseUrl();
+        $baseUrl = $this->getCurrentStoreBaseUrl($storeId);
         $isAdmin = false;
 
         try {
@@ -244,9 +252,9 @@ class StoreConfigHelper extends AbstractHelper
         }
 
         return [
-            'enabled_countries' => $this->getEnabledCountries(),
-            'nl_input_behavior' => $this->getValue('nl_input_behavior') ?? NlInputBehavior::ZIP_HOUSE,
-            'show_hide_address_fields' => $this->getValue('show_hide_address_fields') ?? ShowHideAddressFields::SHOW,
+            'enabled_countries' => $this->getEnabledCountries($storeId),
+            'nl_input_behavior' => $this->getValue('nl_input_behavior', $storeId) ?? NlInputBehavior::ZIP_HOUSE,
+            'show_hide_address_fields' => $this->getValue('show_hide_address_fields', $storeId) ?? ShowHideAddressFields::SHOW,
             'base_url' => $baseUrl,
             'api_actions' => $apiActions,
             'debug' => $this->isDebugging(),
@@ -261,11 +269,12 @@ class StoreConfigHelper extends AbstractHelper
      * Get the base URL of the current store.
      *
      * @access public
+     * @param int|string|null $storeId
      * @return string
      */
-    public function getCurrentStoreBaseUrl(): string
+    public function getCurrentStoreBaseUrl($storeId = null): string
     {
-        $currentStore = $this->_storeManager->getStore();
+        $currentStore = $this->_storeManager->getStore($storeId);
         return $this->_urlBuilder->getBaseUrl(['_store' => $currentStore->getCode()]);
     }
 
@@ -273,10 +282,59 @@ class StoreConfigHelper extends AbstractHelper
      * Check if debugging is active.
      *
      * @access public
+     * @param int|string|null $storeId
      * @return bool
      */
-    public function isDebugging(): bool
+    public function isDebugging($storeId = null): bool
     {
-        return $this->isSetFlag('api_debug') && $this->_developerHelper->isDevAllowed();
+        return $this->isSetFlag('api_debug', $storeId) && $this->_developerHelper->isDevAllowed();
+    }
+
+    /**
+     * Get scope from request params.
+     *
+     * @return array - Scope type and id
+     */
+    public function getScopeFromRequest(): array
+    {
+        $storeId = $this->_request->getParam(ScopeInterface::SCOPE_STORE);
+
+        if ($storeId !== null) {
+            return [ScopeInterface::SCOPE_STORES, (int)$storeId];
+        }
+
+        $websiteId = $this->_request->getParam(ScopeInterface::SCOPE_WEBSITE);
+
+        if ($websiteId !== null) {
+            return [ScopeInterface::SCOPE_WEBSITES, (int)$websiteId];
+        }
+
+        return [\Magento\Framework\App\ScopeInterface::SCOPE_DEFAULT, 0];
+    }
+
+    /**
+     * Get scope type and code based on request.
+     * @param int|string|null $storeId
+     *
+     * @return array - Scope type and id
+     */
+    private function _getScopeContext($storeId = null): array
+    {
+        if ($storeId !== null) {
+            return [ScopeInterface::SCOPE_STORES, $storeId];
+        }
+
+        try {
+            // Check for admin area.
+            if ($this->_appState->getAreaCode() === \Magento\Backend\App\Area\FrontNameResolver::AREA_CODE) {
+                [$scope, $scopeId] = $this->getScopeFromRequest();
+
+                return [$scope, $scopeId ?: null];
+            }
+        } catch (\Magento\Framework\Exception\LocalizedException) {
+            // Area code not set, fall through.
+        }
+
+        return [ScopeInterface::SCOPE_STORES, null];
     }
 }
