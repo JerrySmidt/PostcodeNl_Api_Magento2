@@ -4,7 +4,9 @@ namespace PostcodeEu\AddressValidation\Api\Data\MagentoDebugInfo;
 
 class Configuration implements ConfigurationInterface
 {
+    /** @var string */
     protected $key;
+    /** @var string */
     protected $secret;
 
     /**

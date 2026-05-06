@@ -12,7 +12,9 @@ use PostcodeEu\AddressValidation\Service\CsrfValidator;
 
 class PostcodeModel implements PostcodeModelInterface
 {
+    /** @var ApiClientHelper */
     protected ApiClientHelper $_apiClientHelper;
+    /** @var CsrfValidator */
     protected CsrfValidator $_csrfValidator;
 
     /**
@@ -25,8 +27,7 @@ class PostcodeModel implements PostcodeModelInterface
     public function __construct(
         ApiClientHelper $apiClientHelper,
         CsrfValidator $csrfValidator
-    )
-    {
+    ) {
         $this->_apiClientHelper = $apiClientHelper;
         $this->_csrfValidator = $csrfValidator;
     }
@@ -95,12 +96,9 @@ class PostcodeModel implements PostcodeModelInterface
 
     private function _validateRequest(): void
     {
-        try
-        {
+        try {
             $this->_csrfValidator->validate();
-        }
-        catch (LocalizedException $e)
-        {
+        } catch (LocalizedException $e) {
             throw new WebapiException(__($e->getMessage()), 0, WebapiException::HTTP_FORBIDDEN);
         }
     }

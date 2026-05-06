@@ -19,20 +19,33 @@ class Status extends Template implements RendererInterface
     public const CACHE_ID = 'postcode-eu-status';
     public const CACHE_LIFETIME_SECONDS = 3600;
 
+    /** @var string */
     protected $_template = 'PostcodeEu_AddressValidation::system/config/status.phtml';
+    /** @var \Magento\Framework\App\Config\ScopeConfigInterface */
     protected $_scopeConfig;
+    /** @var StoreConfigHelper */
     protected $_storeConfigHelper;
+    /** @var ApiClientHelper */
     protected $_apiClientHelper;
+    /** @var ConfigInterface */
     protected $_resourceConfig;
+    /** @var CacheTypeList */
     protected $_cacheTypeList;
+    /** @var CacheFrontendPool */
     protected $_cacheFrontendPool;
+    /** @var SerializerInterface */
     protected $_serializer;
+    /** @var DataHelper */
     protected $_dataHelper;
+    /** @var UpdateNotifier */
     protected $_updateNotifier;
 
+    /** @var array|null */
     private $_cachedData;
 
+    /** @var array */
     public array $accountInfo;
+    /** @var array */
     public array $moduleInfo;
 
     /**

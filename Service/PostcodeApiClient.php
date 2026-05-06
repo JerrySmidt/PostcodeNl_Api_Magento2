@@ -46,8 +46,11 @@ class PostcodeApiClient
      */
     protected $_userAgent;
 
+    /** @var Curl */
     protected $_curl;
+    /** @var StoreConfigHelper */
     protected $_storeConfigHelper;
+    /** @var ProductMetadataInterface */
     protected $_productMetadata;
 
     public function __construct(

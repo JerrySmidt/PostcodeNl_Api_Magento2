@@ -10,8 +10,11 @@ use Magento\Framework\Exception\LocalizedException;
 
 class CsrfValidator
 {
+    /** @var FormKeyValidator */
     private FormKeyValidator $_formKeyValidator;
+    /** @var HttpRequest */
     private HttpRequest $_request;
+    /** @var State */
     private State $_appState;
 
     public function __construct(
@@ -30,8 +33,7 @@ class CsrfValidator
             if ($this->_appState->getAreaCode() === Area::AREA_ADMINHTML) {
                 return;
             }
-        }
-        catch (LocalizedException $e) {
+        } catch (LocalizedException $e) {
             // Area code not set.
         }
 

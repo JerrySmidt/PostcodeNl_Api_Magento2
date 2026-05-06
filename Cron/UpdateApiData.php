@@ -15,15 +15,25 @@ use Psr\Log\LoggerInterface;
 
 class UpdateApiData
 {
+    /** @var LoggerInterface */
     protected $_logger;
+    /** @var ApiClientHelper */
     protected $_apiClientHelper;
+    /** @var WriterInterface */
     protected $_configWriter;
+    /** @var StoreConfigHelper */
     protected $_storeConfigHelper;
+    /** @var StoreManagerInterface */
     protected $_storeManager;
+    /** @var CollectionFactory */
     protected $_configCollectionFactory;
+    /** @var EncryptorInterface */
     protected $_encryptor;
+    /** @var TypeListInterface */
     protected $_cacheTypeList;
+    /** @var bool */
     protected $_hasChanges = false;
+    /** @var array */
     protected $_existingConfig = [];
 
     /**

@@ -18,13 +18,21 @@ use PostcodeEu\AddressValidation\Model\Config\Source\ShowHideAddressFields;
 
 class StoreConfigHelper extends AbstractHelper
 {
+    /** @var StoreManagerInterface */
     protected $_storeManager;
+    /** @var DeveloperHelperData */
     protected $_developerHelper;
+    /** @var EncryptorInterface */
     protected $_encryptor;
+    /** @var CountryCollectionFactory */
     protected $_countryCollectionFactory;
+    /** @var ResolverInterface */
     protected $_localeResolver;
+    /** @var FormKey */
     protected $_formKey;
+    /** @var AppState */
     protected $_appState;
+    /** @var BackendUrlInterface */
     protected $_backendUrl;
 
     public const PATH = [
@@ -262,7 +270,6 @@ class StoreConfigHelper extends AbstractHelper
             'change_fields_position' => $this->isSetFlag('change_fields_position'),
             'allow_pobox_shipping' => $this->isSetFlag('allow_pobox_shipping'),
             'split_street_values' => $this->isSetFlag('split_street_values'),
-            'form_key' => $this->_formKey->getFormKey(),
         ];
     }
 
@@ -315,8 +322,8 @@ class StoreConfigHelper extends AbstractHelper
 
     /**
      * Get scope type and code based on request.
-     * @param int|string|null $storeId
      *
+     * @param int|string|null $storeId
      * @return array - Scope type and id
      */
     private function _getScopeContext($storeId = null): array
@@ -332,7 +339,7 @@ class StoreConfigHelper extends AbstractHelper
 
                 return [$scope, $scopeId ?: null];
             }
-        } catch (\Magento\Framework\Exception\LocalizedException) {
+        } catch (\Magento\Framework\Exception\LocalizedException $e) {
             // Area code not set, fall through.
         }
 

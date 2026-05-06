@@ -15,15 +15,34 @@ use Psr\Log\LoggerInterface;
 
 class Config implements ObserverInterface
 {
+    /** @var WriterInterface */
     protected $_configWriter;
+
+    /** @var LoggerInterface */
     protected $_logger;
+
+    /** @var ApiClientHelper */
     protected $_apiClientHelper;
+
+    /** @var TypeListInterface */
     protected $_cacheTypeList;
+
+    /** @var CacheFrontendPool */
     protected $_cacheFrontendPool;
+
+    /** @var StoreConfigHelper */
     protected $_storeConfigHelper;
+
+    /** @var RequestInterface */
     protected $_request;
+
+    /** @var ManagerInterface */
     protected $_messageManager;
+
+    /** @var string */
     protected $_scopeType;
+
+    /** @var int */
     protected $_scopeId;
 
     /**

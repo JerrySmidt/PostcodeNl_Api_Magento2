@@ -8,8 +8,10 @@ use Magento\Framework\Setup\Patch\DataPatchInterface;
 
 class EncryptApiSecrets implements DataPatchInterface
 {
-    protected $_storeConfigHelper;
+    /** @var ConfigInterface */
     protected $_resourceConfig;
+
+    /** @var EncryptorInterface */
     protected $_encryptor;
 
     /**

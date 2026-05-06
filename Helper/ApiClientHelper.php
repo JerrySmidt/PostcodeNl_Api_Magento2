@@ -25,18 +25,31 @@ class ApiClientHelper extends AbstractHelper
     public const API_ACCOUNT_STATUS_INACTIVE = 'inactive';
     public const API_ACCOUNT_STATUS_ACTIVE = 'active';
 
+    /** @var array|null */
     protected $_modules;
+    /** @var ModuleListInterface */
     protected $_moduleList;
+    /** @var Data */
     protected $_developerHelper;
+    /** @var Request */
     protected $_request;
+    /** @var Response */
     protected $_response;
+    /** @var PostcodeApiClient */
     protected $_client;
+    /** @var LocaleResolver */
     protected $_localeResolver;
+    /** @var array */
     protected $_countryCodeMap = [];
+    /** @var StoreConfigHelper */
     protected $_storeConfigHelper;
+    /** @var ProductMetadataInterface */
     protected $_productMetadata;
+    /** @var RegionFactory */
     protected $_regionFactory;
+    /** @var AddressHelper */
     protected $_addressHelper;
+    /** @var LoggerInterface */
     protected $_logger;
 
     /**
@@ -501,6 +514,11 @@ class ApiClientHelper extends AbstractHelper
         return $this->_countryCodeMap[$mapKey][strtoupper($iso2Code)] ?? null;
     }
 
+    /**
+     * Get account info
+     *
+     * @return array
+     */
     public function getAccountInfo(): array
     {
         try {

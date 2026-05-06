@@ -14,8 +14,11 @@ class Api extends Action implements HttpGetActionInterface
 {
     const ADMIN_RESOURCE = 'PostcodeEu_AddressValidation::config_postcode_eu';
 
+    /** @var JsonFactory */
     protected $_resultJsonFactory;
+    /** @var PostcodeModelInterface */
     protected $_postcodeModel;
+    /** @var ServiceOutputProcessor */
     protected $_serviceOutputProcessor;
 
     public function __construct(

@@ -11,6 +11,7 @@ use Magento\Framework\App\ProductMetadataInterface;
  */
 class ValidatorPlugin
 {
+    /** @var ProductMetadataInterface */
     private $_productMetadata;
 
     /**
