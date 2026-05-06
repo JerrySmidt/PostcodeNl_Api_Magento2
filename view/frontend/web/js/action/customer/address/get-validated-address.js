@@ -3,19 +3,17 @@ define([
 ], function (Registry) {
     'use strict';
 
-    function validateAddress(country, streetAndBuilding, postcode, locality) {
+    function validateAddress(country, streetAndBuilding = '', postcode = '', locality = '') {
         const settings = Registry.get('address_autofill').settings,
-            params = [
-                'streetAndBuilding=' + encodeURIComponent(streetAndBuilding ?? ''),
-                'postcode=' + encodeURIComponent(postcode ?? ''),
-                'locality=' + encodeURIComponent(locality ?? ''),
-                'form_key=' + settings.form_key,
-            ].join('&'),
-            url = `${settings.api_actions.validate}/${country}?${params}`;
+            url = new URL(settings.api_actions.validate.replace('{country}', country)),
+            headers = {'X-Requested-With': 'XMLHttpRequest'};
 
-        return fetch(url, {headers: {'X-Requested-With': 'XMLHttpRequest'}}).then((response) => {
-            if (response.ok)
-            {
+        url.searchParams.set('streetAndBuilding', streetAndBuilding);
+        url.searchParams.set('postcode', postcode);
+        url.searchParams.set('locality', locality);
+
+        return fetch(url.toString().replaceAll('+', '%20'), {headers}).then((response) => {
+            if (response.ok) {
                 return response.json();
             }
 
@@ -33,8 +31,7 @@ define([
                     && !top.status.isAmbiguous
                     && top.status.grade < 'C'
                     && ['Building', 'BuildingPartial'].includes(top.status.validationLevel)
-                )
-                {
+                ) {
                     return top;
                 }
 

@@ -237,17 +237,18 @@ class StoreConfigHelper extends AbstractHelper
         if ($isAdmin) {
             $apiBaseUrl = $this->_backendUrl->getUrl('postcode_eu/address/api');
             $apiActions = [
-                'dutchAddressLookup' => $apiBaseUrl . 'postcode',
-                'autocomplete' => $apiBaseUrl . 'autocomplete',
-                'addressDetails' => $apiBaseUrl . 'address_details',
+                'dutchAddressLookup' => $apiBaseUrl . 'method/postcode/postcode/{postcode}/house_number/{houseNumber}',
+                'autocomplete' => $apiBaseUrl . 'method/autocomplete/context/{context}/term/{term}',
+                'addressDetails' => $apiBaseUrl . 'method/address_details/context/{context}',
             ];
         } else {
             $apiBaseUrl = $baseUrl . 'postcode-eu/V1/';
+            $formKey = $this->_formKey->getFormKey();
             $apiActions = [
-                'dutchAddressLookup' => $apiBaseUrl . 'nl/address',
-                'autocomplete' => $apiBaseUrl . 'international/autocomplete',
-                'addressDetails' => $apiBaseUrl . 'international/address',
-                'validate' => $apiBaseUrl . 'international/validate',
+                'dutchAddressLookup' => $apiBaseUrl . 'nl/address/{postcode}/{houseNumber}?form_key=' . $formKey,
+                'autocomplete' => $apiBaseUrl . 'international/autocomplete/{context}/{term}?form_key=' . $formKey,
+                'addressDetails' => $apiBaseUrl . 'international/address/{context}?form_key=' . $formKey,
+                'validate' => $apiBaseUrl . 'international/validate/{country}?form_key=' . $formKey,
             ];
         }
 

@@ -21,25 +21,20 @@ define([
                 showLogo: viewModel.showLogo ?? true,
             });
 
-            // Override methods to add form_key.
+            // Override methods to process URL template.
             viewModel.intlAutocompleteInstance.getSuggestions = function (context, term, response) {
                 context = encodeURIComponent(context);
                 term = encodeURIComponent(term);
 
                 return this.xhrGet(
                     // See client/helper for language and buildingListMode parameters.
-                    `${this.options.autocompleteUrl}/${context}/${term}?form_key=${viewModel.settings.form_key}`,
+                    this.options.autocompleteUrl.replace('{context}', context).replace('{term}', term),
                     response
                 );
             };
 
             viewModel.intlAutocompleteInstance.getDetails = function (...args) {
-                const response = args.pop();
-
-                return this.xhrGet(
-                    `${this.options.addressDetailsUrl}/${args.join('/')}?form_key=${viewModel.settings.form_key}`,
-                    response
-                );
+                return this.xhrGet(this.options.addressDetailsUrl.replace('{context}', args[0]), args.at(-1));
             };
 
             viewModel.inputElement = element;

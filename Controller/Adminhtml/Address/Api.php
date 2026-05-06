@@ -10,8 +10,10 @@ use Magento\Framework\Controller\Result\JsonFactory;
 use Magento\Framework\Webapi\ServiceOutputProcessor;
 use PostcodeEu\AddressValidation\Api\PostcodeModelInterface;
 
-Class Api extends Action implements HttpGetActionInterface
+class Api extends Action implements HttpGetActionInterface
 {
+    const ADMIN_RESOURCE = 'PostcodeEu_AddressValidation::config_postcode_eu';
+
     protected $_resultJsonFactory;
     protected $_postcodeModel;
     protected $_serviceOutputProcessor;
@@ -35,28 +37,33 @@ Class Api extends Action implements HttpGetActionInterface
      */
     public function execute(): Json
     {
-        // Get params from path. Slice from index 4 to exclude
-        // <admin-front-name>/<route-front-name>/<controller-name>/<action-name>
-        $params = array_slice(explode('/', trim($this->getRequest()->getPathInfo(), '/')), 4);
-        $params = array_map('rawurldecode', $params);
+        $resultJson = $this->_resultJsonFactory->create();
+        $request = $this->getRequest();
 
-        switch (array_shift($params))
-        {
-            case 'postcode':
-                $serviceMethod = 'getNlAddress';
-            break;
-            case 'autocomplete':
-                $serviceMethod = 'getAddressAutocomplete';
-            break;
-            case 'address_details':
-                $serviceMethod = count($params) > 1 ? 'getAddressDetailsCountry' : 'getAddressDetails';
-            break;
-            default:
-                throw new \Exception('Invalid service method');
+        try {
+            switch ($request->getParam('method')) {
+                case 'postcode':
+                    $serviceMethod = 'getNlAddress';
+                    $params = ['postcode', 'house_number'];
+                    break;
+                case 'autocomplete':
+                    $serviceMethod = 'getAddressAutocomplete';
+                    $params = ['context', 'term'];
+                    break;
+                case 'address_details':
+                    $serviceMethod = 'getAddressDetails';
+                    $params = ['context'];
+                    break;
+                default:
+                    throw new \Exception('Invalid service method');
+            }
+
+            $values = array_filter($request->getParams(), fn($key) => in_array($key, $params), ARRAY_FILTER_USE_KEY);
+            $result = $this->_postcodeModel->$serviceMethod(...array_values($values));
+            $result = $this->_serviceOutputProcessor->process($result, PostcodeModelInterface::class, $serviceMethod);
+            return $resultJson->setData($result);
+        } catch (\Exception $e) {
+            return $resultJson->setHttpResponseCode(400)->setData(['error' => $e->getMessage()]);
         }
-
-        $result = $this->_postcodeModel->$serviceMethod(...$params);
-        $result = $this->_serviceOutputProcessor->process($result, PostcodeModelInterface::class, $serviceMethod);
-        return $this->_resultJsonFactory->create()->setData($result);
     }
 }

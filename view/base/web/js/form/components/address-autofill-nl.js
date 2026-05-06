@@ -117,13 +117,13 @@ define([
         },
 
         getAddress: function (acceptUnknownAddition = false) {
-            const postcode = encodeURIComponent(
-                    AddressNlModel.postcodeRegex.exec(this.childPostcode().value())[0].replace(/\s/g, '')
-                ),
-                houseNumber = encodeURIComponent(
-                    AddressNlModel.houseNumberRegex.exec(this.childHouseNumber().value())[0].trim()
-                ),
-                url = `${this.settings.api_actions.dutchAddressLookup}/${postcode}/${houseNumber}`;
+            const postcode = AddressNlModel.postcodeRegex.exec(this.childPostcode().value())[0].replace(/\s/g, ''),
+                houseNumber = AddressNlModel.houseNumberRegex.exec(this.childHouseNumber().value())[0].trim(),
+                url = new URL(
+                    this.settings.api_actions.dutchAddressLookup
+                        .replace('{postcode}', postcode)
+                        .replace('{houseNumber}', houseNumber)
+                );
 
             this.resetInputAddress();
             this.address(null);
@@ -132,9 +132,8 @@ define([
             this.childHouseNumber().error(false);
 
             $.get({
-                url: url,
+                url,
                 cache: true,
-                data: {form_key: this.settings.form_key},
                 dataType: 'json',
                 success: ([response]) => {
                     if (response.error) {
