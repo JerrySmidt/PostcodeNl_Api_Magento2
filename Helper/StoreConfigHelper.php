@@ -266,10 +266,10 @@ class StoreConfigHelper extends AbstractHelper
             'show_hide_address_fields' => $this->getValue('show_hide_address_fields', $storeId) ?? ShowHideAddressFields::SHOW,
             'base_url' => $baseUrl,
             'api_actions' => $apiActions,
-            'debug' => $this->isDebugging(),
-            'change_fields_position' => $this->isSetFlag('change_fields_position'),
-            'allow_pobox_shipping' => $this->isSetFlag('allow_pobox_shipping'),
-            'split_street_values' => $this->isSetFlag('split_street_values'),
+            'debug' => $this->isDebugging($storeId),
+            'change_fields_position' => $this->isSetFlag('change_fields_position', $storeId),
+            'allow_pobox_shipping' => $this->isSetFlag('allow_pobox_shipping', $storeId),
+            'split_street_values' => $this->isSetFlag('split_street_values', $storeId),
         ];
     }
 
