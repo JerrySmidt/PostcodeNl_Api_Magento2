@@ -4,11 +4,17 @@ namespace PostcodeEu\AddressValidation\Api\Data;
 
 class MagentoDebugInfo implements MagentoDebugInfoInterface
 {
+    /** @var string */
     protected $moduleVersion;
+    /** @var string */
     protected $magentoVersion;
+    /** @var string */
     protected $client;
+    /** @var string */
     protected $session;
+    /** @var MagentoDebugInfo\ConfigurationInterface */
     protected $configuration;
+    /** @var MagentoDebugInfo\MagentoModuleInterface[] */
     protected $modules;
 
     /**

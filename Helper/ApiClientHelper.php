@@ -25,18 +25,31 @@ class ApiClientHelper extends AbstractHelper
     public const API_ACCOUNT_STATUS_INACTIVE = 'inactive';
     public const API_ACCOUNT_STATUS_ACTIVE = 'active';
 
+    /** @var array|null */
     protected $_modules;
+    /** @var ModuleListInterface */
     protected $_moduleList;
+    /** @var Data */
     protected $_developerHelper;
+    /** @var Request */
     protected $_request;
+    /** @var Response */
     protected $_response;
+    /** @var PostcodeApiClient */
     protected $_client;
+    /** @var LocaleResolver */
     protected $_localeResolver;
+    /** @var array */
     protected $_countryCodeMap = [];
+    /** @var StoreConfigHelper */
     protected $_storeConfigHelper;
+    /** @var ProductMetadataInterface */
     protected $_productMetadata;
+    /** @var RegionFactory */
     protected $_regionFactory;
+    /** @var AddressHelper */
     protected $_addressHelper;
+    /** @var LoggerInterface */
     protected $_logger;
 
     /**
@@ -303,7 +316,6 @@ class ApiClientHelper extends AbstractHelper
         }
 
         try {
-
             $client = $this->getApiClient();
             $address = $client->dutchAddressByPostcode($zipCode, $houseNumber, $houseNumberAddition);
             $status = 'valid';
@@ -312,6 +324,7 @@ class ApiClientHelper extends AbstractHelper
                 || (!empty($address['houseNumberAdditions']) && null === $address['houseNumberAddition'])
             ) {
                 $status = 'houseNumberAdditionIncorrect';
+                $unknownHouseNumberAddition = $houseNumberAddition;
             }
         } catch (NotFoundException $e) {
             return ['status' => 'notFound', 'address' => null];
@@ -322,12 +335,18 @@ class ApiClientHelper extends AbstractHelper
         $formattedHouseNumberAdditions = [];
 
         foreach ($address['houseNumberAdditions'] ?? [] as $addition) {
-            $houseNumberWithAddition = rtrim($address['houseNumber'] . ' ' . $addition);
-            $formattedHouseNumberAdditions[] = [
-                'label' => $houseNumberWithAddition,
-                'value' => $houseNumberWithAddition,
-                'houseNumberAddition' => $addition,
-            ];
+            $formattedHouseNumberAdditions[] = $this->_formatHouseNumberAdditionOption(
+                $address['houseNumber'],
+                $addition
+            );
+        }
+
+        if (isset($unknownHouseNumberAddition)) {
+            $formattedHouseNumberAdditions[] = $this->_formatHouseNumberAdditionOption(
+                $address['houseNumber'],
+                $unknownHouseNumberAddition,
+                '(' . __('unknown addition') . ')'
+            );
         }
 
         $address['houseNumberAdditions'] = $formattedHouseNumberAdditions;
@@ -345,6 +364,25 @@ class ApiClientHelper extends AbstractHelper
     }
 
     /**
+     * Format house number with addition for use in select UI component.
+     *
+     * @access private
+     * @param int $houseNumber
+     * @param string $addition
+     * @param string $labelSuffix - Additional text to append to the label.
+     * @return array
+     */
+    private function _formatHouseNumberAdditionOption(int $houseNumber, string $addition, string $labelSuffix = null): array
+    {
+        $houseNumberWithAddition = rtrim($houseNumber . ' ' . $addition);
+        return [
+            'label' => rtrim($houseNumberWithAddition . ' ' . ($labelSuffix ?? '')),
+            'value' => $houseNumberWithAddition,
+            'houseNumberAddition' => $addition,
+        ];
+    }
+
+    /**
      * _handleClientException function.
      *
      * @access private
@@ -353,8 +391,11 @@ class ApiClientHelper extends AbstractHelper
      */
     private function _handleClientException(\Exception $exception): array
     {
-        if (!$exception instanceof \PostcodeEu\AddressValidation\Service\Exception\NotFoundException) {
+        if ($exception instanceof NotFoundException) {
+            $this->_response->setHttpResponseCode(404);
+        } else {
             $this->_logger->error($exception->getMessage(), ['exception' => $exception]);
+            $this->_response->setHttpResponseCode(400);
         }
 
         $result = ['error' => true, 'message' => __('Something went wrong. Please try again.')];
@@ -473,6 +514,11 @@ class ApiClientHelper extends AbstractHelper
         return $this->_countryCodeMap[$mapKey][strtoupper($iso2Code)] ?? null;
     }
 
+    /**
+     * Get account info
+     *
+     * @return array
+     */
     public function getAccountInfo(): array
     {
         try {
@@ -536,18 +582,16 @@ class ApiClientHelper extends AbstractHelper
         ];
 
         // Module version
-        $debug['moduleVersion'] = $this->_storeConfigHelper->getModuleVersion();
+        $debug['module_version'] = $this->_storeConfigHelper->getModuleVersion();
 
         // Magento version
         $version = $this->_productMetadata->getVersion();
 
-        $debug['magentoVersion'] = 'Magento/' . $version;
+        $debug['magento_version'] = 'Magento/' . $version;
         if ($this->_getModuleInfo('Enterprise_CatalogPermissions') !== null) {
-            $debug['magentoVersion'] = 'MagentoEnterprise/' . $version;
-
+            $debug['magento_version'] = 'MagentoEnterprise/' . $version;
         } elseif ($this->_getModuleInfo('Enterprise_Enterprise') !== null) {
-
-            $debug['magentoVersion'] = 'MagentoProfessional/' . $version;
+            $debug['magento_version'] = 'MagentoProfessional/' . $version;
         }
 
         $debug['client'] = $this->getApiClient()->getUserAgent();

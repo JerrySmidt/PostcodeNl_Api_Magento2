@@ -10,9 +10,16 @@ use Magento\Framework\Setup\Patch\DataPatchInterface;
 
 class UpdateApiStatusConfig implements DataPatchInterface
 {
+    /** @var ApiClientHelper */
     protected $_apiClientHelper;
+
+    /** @var WriterInterface */
     protected $_configWriter;
+
+    /** @var StoreConfigHelper */
     protected $_storeConfigHelper;
+
+    /** @var ConfigInterface */
     protected $_resourceConfig;
 
     /**
@@ -44,7 +51,7 @@ class UpdateApiStatusConfig implements DataPatchInterface
      */
     public function getAliases(): array
     {
-        return ['Flekto\Postcode\Setup\Patch\Data\UpdateApiStatusConfig'];
+        return [\Flekto\Postcode\Setup\Patch\Data\UpdateApiStatusConfig::class];
     }
 
     /**

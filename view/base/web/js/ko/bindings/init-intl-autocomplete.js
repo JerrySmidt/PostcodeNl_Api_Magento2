@@ -21,6 +21,22 @@ define([
                 showLogo: viewModel.showLogo ?? true,
             });
 
+            // Override methods to process URL template.
+            viewModel.intlAutocompleteInstance.getSuggestions = function (context, term, response) {
+                context = encodeURIComponent(context);
+                term = encodeURIComponent(term);
+
+                return this.xhrGet(
+                    // See client/helper for language and buildingListMode parameters.
+                    this.options.autocompleteUrl.replace('{context}', context).replace('{term}', term),
+                    response
+                );
+            };
+
+            viewModel.intlAutocompleteInstance.getDetails = function (...args) {
+                return this.xhrGet(this.options.addressDetailsUrl.replace('{context}', args[0]), args.at(-1));
+            };
+
             viewModel.inputElement = element;
 
             function getAddressDetails(context, callback) {
@@ -65,6 +81,10 @@ define([
             element.addEventListener('autocomplete-search', () => {
                 viewModel.resetInputAddress();
                 viewModel.address(null);
+            });
+
+            element.addEventListener('autocomplete-xhr-send', ({detail: xhr}) => {
+                xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
             });
         }
     };

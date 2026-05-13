@@ -4,7 +4,7 @@ define([], function () {
     return Object.defineProperties({}, {
         lookupDelay: { value: 750 },
         postcodeRegex: { value: /[1-9][0-9]{3}\s*[a-z]{2}/i },
-        houseNumberRegex: { value: /[1-9]\d{0,4}(?:\D.*)?$/i },
+        houseNumberRegex: { value: /[1-9]\d{0,4}(\D.*)?$/i },
         status: {
             value: Object.defineProperties({}, {
                 VALID: { value: 'valid' },

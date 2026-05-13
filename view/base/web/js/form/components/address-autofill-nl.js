@@ -116,14 +116,14 @@ define([
             return AddressNlModel.houseNumberRegex.test(this.childHouseNumber().value());
         },
 
-        getAddress: function () {
-            const postcode = encodeURIComponent(
-                    AddressNlModel.postcodeRegex.exec(this.childPostcode().value())[0].replace(/\s/g, '')
-                ),
-                houseNumber = encodeURIComponent(
-                    AddressNlModel.houseNumberRegex.exec(this.childHouseNumber().value())[0].trim()
-                ),
-                url = `${this.settings.api_actions.dutchAddressLookup}/${postcode}/${houseNumber}`;
+        getAddress: function (acceptUnknownAddition = false) {
+            const postcode = AddressNlModel.postcodeRegex.exec(this.childPostcode().value())[0].replace(/\s/g, ''),
+                houseNumber = AddressNlModel.houseNumberRegex.exec(this.childHouseNumber().value())[0].trim(),
+                url = new URL(
+                    this.settings.api_actions.dutchAddressLookup
+                        .replace('{postcode}', postcode)
+                        .replace('{houseNumber}', houseNumber)
+                );
 
             this.resetInputAddress();
             this.address(null);
@@ -132,7 +132,7 @@ define([
             this.childHouseNumber().error(false);
 
             $.get({
-                url: url,
+                url,
                 cache: true,
                 dataType: 'json',
                 success: ([response]) => {
@@ -152,7 +152,15 @@ define([
                     this.address(response.address);
 
                     if (this.status() === AddressNlModel.status.ADDITION_INCORRECT) {
-                        this.childHouseNumberSelect().setOptions(response.address.houseNumberAdditions);
+                        if (acceptUnknownAddition) {
+                            this.status(AddressNlModel.status.VALID);
+                            this.address().houseNumberAddition = AddressNlModel.houseNumberRegex.exec(
+                                this.childHouseNumber().value()
+                            )[1].trim();
+                            this.address.valueHasMutated();
+                        } else {
+                            this.childHouseNumberSelect().setOptions(response.address.houseNumberAdditions);
+                        }
                     } else {
                         this.toggleFields(true);
                     }

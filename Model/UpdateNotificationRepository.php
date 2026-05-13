@@ -12,7 +12,9 @@ use Magento\Framework\Exception\LocalizedException;
 
 class UpdateNotificationRepository implements UpdateNotificationRepositoryInterface
 {
+    /** @var UpdateNotificationResource */
     protected $_resource;
+    /** @var UpdateNotificationFactory */
     protected $_notificationFactory;
 
     public function __construct(

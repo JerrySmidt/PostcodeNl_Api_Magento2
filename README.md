@@ -57,7 +57,7 @@ Other output options are:
 
 ## GraphQL Support
 
-Our module now supports GraphQL, allowing you to query address data via Magento's GraphQL API. This enables integration with headless Magento setups, progressive web applications (PWAs), and other front-end technologies that leverage GraphQL.
+We provide a [separate module for GraphQL support](https://github.com/postcode-nl/PostcodeEu_Api_Magento2_GraphQl), allowing you to query address data via Magento's GraphQL API. This enables integration with headless Magento setups, progressive web applications (PWAs), and other front-end technologies that leverage GraphQL.
 
 ## Compatibility
 

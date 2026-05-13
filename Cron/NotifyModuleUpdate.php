@@ -8,8 +8,11 @@ use PostcodeEu\AddressValidation\Model\UpdateNotification\UpdateNotifier;
 
 class NotifyModuleUpdate
 {
+    /** @var LoggerInterface */
     protected $_logger;
+    /** @var DataHelper */
     protected $_dataHelper;
+    /** @var UpdateNotifier */
     protected $_updateNotifier;
 
     /**

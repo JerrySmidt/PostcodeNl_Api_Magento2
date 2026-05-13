@@ -2,29 +2,34 @@
 
 namespace PostcodeEu\AddressValidation\Model;
 
-use PostcodeEu\AddressValidation\Helper\ApiClientHelper;
-use PostcodeEu\AddressValidation\Api\PostcodeModelInterface;
+use Magento\Framework\Exception\LocalizedException;
+use Magento\Framework\Webapi\Exception as WebapiException;
 use PostcodeEu\AddressValidation\Api\Data\Autocomplete as AutocompleteData;
 use PostcodeEu\AddressValidation\Api\Data\AutocompleteInterface as AutocompleteDataInterface;
+use PostcodeEu\AddressValidation\Api\PostcodeModelInterface;
+use PostcodeEu\AddressValidation\Helper\ApiClientHelper;
+use PostcodeEu\AddressValidation\Service\CsrfValidator;
 
 class PostcodeModel implements PostcodeModelInterface
 {
+    /** @var ApiClientHelper */
+    protected ApiClientHelper $_apiClientHelper;
+    /** @var CsrfValidator */
+    protected CsrfValidator $_csrfValidator;
 
     /**
-     * @var ApiClientHelper
-     */
-    protected $apiClientHelper;
-
-    /**
-     * __construct function.
+     * Constructor
      *
      * @access public
      * @param ApiClientHelper $apiClientHelper
      * @return void
      */
-    public function __construct(ApiClientHelper $apiClientHelper)
-    {
-        $this->apiClientHelper = $apiClientHelper;
+    public function __construct(
+        ApiClientHelper $apiClientHelper,
+        CsrfValidator $csrfValidator
+    ) {
+        $this->_apiClientHelper = $apiClientHelper;
+        $this->_csrfValidator = $csrfValidator;
     }
 
     /**
@@ -32,7 +37,9 @@ class PostcodeModel implements PostcodeModelInterface
      */
     public function getAddressAutocomplete(string $context, string $term): AutocompleteDataInterface
     {
-        $result = $this->apiClientHelper->getAddressAutocomplete($context, $term);
+        $this->_validateRequest();
+
+        $result = $this->_apiClientHelper->getAddressAutocomplete($context, $term);
         return new AutocompleteData($result);
     }
 
@@ -41,7 +48,9 @@ class PostcodeModel implements PostcodeModelInterface
      */
     public function getAddressDetails(string $context): array
     {
-        $result = $this->apiClientHelper->getAddressDetails($context);
+        $this->_validateRequest();
+
+        $result = $this->_apiClientHelper->getAddressDetails($context);
         return [$result];
     }
 
@@ -50,7 +59,9 @@ class PostcodeModel implements PostcodeModelInterface
      */
     public function getAddressDetailsCountry(string $context, string $dispatchCountry): array
     {
-        $result = $this->apiClientHelper->getAddressDetails($context, $dispatchCountry);
+        $this->_validateRequest();
+
+        $result = $this->_apiClientHelper->getAddressDetails($context, $dispatchCountry);
         return [$result];
     }
 
@@ -59,7 +70,9 @@ class PostcodeModel implements PostcodeModelInterface
      */
     public function getNlAddress(string $zipCode, string $houseNumber): array
     {
-        $result = $this->apiClientHelper->getNlAddress($zipCode, $houseNumber);
+        $this->_validateRequest();
+
+        $result = $this->_apiClientHelper->getNlAddress($zipCode, $houseNumber);
         return [$result];
     }
 
@@ -75,7 +88,18 @@ class PostcodeModel implements PostcodeModelInterface
         ?string $region = null,
         ?string $streetAndBuilding = null
     ): array {
-        $result = $this->apiClientHelper->validateAddress(...func_get_args());
+        $this->_validateRequest();
+
+        $result = $this->_apiClientHelper->validateAddress(...func_get_args());
         return [$result];
+    }
+
+    private function _validateRequest(): void
+    {
+        try {
+            $this->_csrfValidator->validate();
+        } catch (LocalizedException $e) {
+            throw new WebapiException(__($e->getMessage()), 0, WebapiException::HTTP_FORBIDDEN);
+        }
     }
 }

@@ -4,7 +4,9 @@ namespace PostcodeEu\AddressValidation\Api\Data\MagentoDebugInfo;
 
 class MagentoModule implements MagentoModuleInterface
 {
+    /** @var string */
     private string $name;
+    /** @var string */
     private string $setupVersion;
 
     /**

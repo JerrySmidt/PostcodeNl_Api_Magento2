@@ -30,10 +30,8 @@ class RebrandNotice implements MessageInterface
      */
     public function isDisplayed(): bool
     {
-        foreach ($this->moduleList->getAll() as $module)
-        {
-            if (isset($module['sequence']) && in_array('Flekto_Postcode', $module['sequence']))
-            {
+        foreach ($this->moduleList->getAll() as $module) {
+            if (isset($module['sequence']) && in_array('Flekto_Postcode', $module['sequence'])) {
                 return true;
             }
         }

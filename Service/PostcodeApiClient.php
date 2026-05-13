@@ -46,8 +46,11 @@ class PostcodeApiClient
      */
     protected $_userAgent;
 
+    /** @var Curl */
     protected $_curl;
+    /** @var StoreConfigHelper */
     protected $_storeConfigHelper;
+    /** @var ProductMetadataInterface */
     protected $_productMetadata;
 
     public function __construct(
@@ -212,6 +215,10 @@ class PostcodeApiClient
             'region' => $region,
             'streetAndBuilding' => $streetAndBuilding,
         ], fn($value) => $value !== null);
+
+        if (!in_array(strtoupper($country), array_column($this->_storeConfigHelper->getSupportedCountries(), 'iso3'))) {
+            throw new BadRequestException('Country not supported', 400);
+        }
 
         return $this->_fetch(
             sprintf(

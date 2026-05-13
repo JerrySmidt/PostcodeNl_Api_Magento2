@@ -19,20 +19,33 @@ class Status extends Template implements RendererInterface
     public const CACHE_ID = 'postcode-eu-status';
     public const CACHE_LIFETIME_SECONDS = 3600;
 
+    /** @var string */
     protected $_template = 'PostcodeEu_AddressValidation::system/config/status.phtml';
+    /** @var \Magento\Framework\App\Config\ScopeConfigInterface */
     protected $_scopeConfig;
+    /** @var StoreConfigHelper */
     protected $_storeConfigHelper;
+    /** @var ApiClientHelper */
     protected $_apiClientHelper;
+    /** @var ConfigInterface */
     protected $_resourceConfig;
+    /** @var CacheTypeList */
     protected $_cacheTypeList;
+    /** @var CacheFrontendPool */
     protected $_cacheFrontendPool;
+    /** @var SerializerInterface */
     protected $_serializer;
+    /** @var DataHelper */
     protected $_dataHelper;
+    /** @var UpdateNotifier */
     protected $_updateNotifier;
 
+    /** @var array|null */
     private $_cachedData;
 
+    /** @var array */
     public array $accountInfo;
+    /** @var array */
     public array $moduleInfo;
 
     /**
@@ -191,13 +204,15 @@ class Status extends Template implements RendererInterface
     private function _getCachedData(): array
     {
         $cache = $this->_cacheFrontendPool->get(\Magento\Framework\App\Cache\Type\Config::TYPE_IDENTIFIER);
-        $cachedData = $cache->load(self::CACHE_ID);
+        [$scopeType, $scopeId] = $this->_storeConfigHelper->getScopeFromRequest();
+        $cacheId = implode('-', [self::CACHE_ID, $scopeType, $scopeId]);
+        $cachedData = $cache->load($cacheId);
 
         if ($cachedData === false) {
             $data = [];
             $data['accountInfo'] = $this->_getAccountInfo();
             $data['moduleInfo'] = $this->_dataHelper->getModuleInfo();
-            $cache->save($this->_serializer->serialize($data), self::CACHE_ID, [], self::CACHE_LIFETIME_SECONDS);
+            $cache->save($this->_serializer->serialize($data), $cacheId, [], self::CACHE_LIFETIME_SECONDS);
             return $data;
         }
 
