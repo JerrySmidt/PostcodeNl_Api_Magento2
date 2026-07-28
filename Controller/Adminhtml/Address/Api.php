@@ -76,7 +76,9 @@ class Api extends Action implements HttpGetActionInterface
                     throw new \InvalidArgumentException(sprintf('Invalid parameter `%s`', $param));
                 }
 
-                if (trim($value) === '') {
+                $value = $param === 'term' ? $value : trim($value);
+
+                if ($value === '') {
                     throw new \InvalidArgumentException(sprintf('Missing parameter `%s`', $param));
                 }
 
