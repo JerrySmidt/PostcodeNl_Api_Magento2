@@ -20,6 +20,7 @@ class ApiAvailabilityMonitor
     private const DEFAULT_FAILURE_WINDOW_SECONDS = 300;
     private const DEFAULT_COOLDOWN_SECONDS = 30;
     private const MAX_COOLDOWN_SECONDS = 900;
+    private const STATE_TTL_SECONDS = 86400;
 
     /** @var CacheInterface */
     private CacheInterface $_cache;
@@ -261,18 +262,14 @@ class ApiAvailabilityMonitor
         // Acceptable because the state self-heals on the next cycle.
         $this->_loadedState = $state;
 
-        // - Healthy state: no TTL (keep cached for fast reads).
-        // - Unavailable state: TTL set to MAX_COOLDOWN_SECONDS (safety net, in case a successful request never resets it).
-        // TTL always uses MAX_COOLDOWN_SECONDS, not the effective cooldown,
-        // so trip count survives across cooldown boundaries for compounding.
-        $ttl = $state['unavailable_since'] === null ? 0 : self::MAX_COOLDOWN_SECONDS;
-
         try {
             $saved = $this->_cache->save(
                 json_encode($state, JSON_THROW_ON_ERROR),
                 self::CACHE_KEY,
                 [self::CACHE_TAG],
-                $ttl
+                // The TTL must exceed the maximum cooldown so trip count survives the half-open transition.
+                // State evaluation handles cooldown expiry.
+                self::STATE_TTL_SECONDS
             );
 
             if (!$saved) {
