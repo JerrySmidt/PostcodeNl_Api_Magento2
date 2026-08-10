@@ -6,6 +6,7 @@ use Exception;
 use PostcodeEu\AddressValidation\Helper\StoreConfigHelper;
 use PostcodeEu\AddressValidation\Service\Exception\NotFoundException;
 use PostcodeEu\AddressValidation\Service\Exception\ServiceUnavailableException;
+use PostcodeEu\AddressValidation\Service\Exception\UnexpectedException;
 use PostcodeEu\AddressValidation\Service\PostcodeApiClient;
 use PostcodeEu\AddressValidation\Service\ApiAvailabilityMonitor;
 use Magento\Customer\Helper\Address as AddressHelper;
@@ -407,7 +408,12 @@ class ApiClientHelper extends AbstractHelper
             $this->_response->setHttpResponseCode(503);
         } else {
             $this->_logger->error($exception->getMessage(), ['exception' => $exception]);
-            $this->_response->setHttpResponseCode($exception->getCode() >= 500 ? 500 : 400);
+
+            if ($exception instanceof UnexpectedException || $exception instanceof ServiceUnavailableException) {
+                $this->_response->setHttpResponseCode(500);
+            } else {
+                $this->_response->setHttpResponseCode(400);
+            }
         }
 
         $result = ['error' => true, 'message' => __('Something went wrong. Please try again.')];
