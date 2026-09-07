@@ -181,32 +181,43 @@ class ApiClientHelper extends AbstractHelper
         $countryIso2 = $addressDetails['country']['iso2Code'];
         switch ($countryIso2) {
             case 'NL':
-                $region = $addressDetails['details']['nldProvince']['name'];
+                $regionName = $addressDetails['details']['nldProvince']['name'];
                 break;
             case 'BE':
                 if (isset($addressDetails['details']['belProvince'])) {
-                    $region = $addressDetails['details']['belProvince']['primaryName'];
+                    $regionName = $addressDetails['details']['belProvince']['primaryName'];
                 } else {
-                    $region = $addressDetails['details']['belRegion']['primaryName'];
+                    $regionName = $addressDetails['details']['belRegion']['primaryName'];
                 }
                 break;
             case 'DE':
-                $region = $addressDetails['details']['deuFederalState']['name'];
+                $regionName = $addressDetails['details']['deuFederalState']['name'];
                 break;
             case 'LU':
-                $region = $addressDetails['details']['luxCanton']['name'];
+                $regionName = $addressDetails['details']['luxCanton']['name'];
                 break;
             case 'ES':
-                $region = $addressDetails['details']['espProvince']['name'];
-                $regions = explode('/', $region);
+                $regionName = $addressDetails['details']['espProvince']['name'];
+                $regions = explode('/', $regionName);
                 break;
             case 'CH':
-                $region = $addressDetails['details']['cheCanton']['name'];
+                $regionCode = $addressDetails['details']['cheCanton']['code'];
+                break;
+            case 'IT':
+                $regionCode = $addressDetails['details']['itaTerritory']['code'];
+                break;
+            case 'FI':
+                $regionName = $addressDetails['details']['finRegion']['name'];
+                break;
+            case 'FR':
+                $regionName = $addressDetails['details']['fraDepartment']['name'];
                 break;
         }
 
-        if (isset($region)) {
-            foreach ($regions ?? [$region] as $r) { // Use $regions array to try alternative names.
+        if (isset($regionCode)) {
+            ['id' => $id, 'name' => $name] = $this->_getRegionByCode($regionCode, $countryIso2);
+        } else if (isset($regionName)) {
+            foreach ($regions ?? [$regionName] as $r) { // Use $regions array to try alternative names.
                 ['id' => $id, 'name' => $name] = $this->_getRegionByName($r, $countryIso2);
                 if (isset($id)) {
                     break;
@@ -214,7 +225,24 @@ class ApiClientHelper extends AbstractHelper
             }
         }
 
-        return ['id' => $id ?? null, 'name' => $name ?? $region ?? null];
+        return ['id' => $id ?? null, 'name' => $name ?? $regionName ?? null];
+    }
+
+    /**
+     * Get region by code.
+     *
+     * @param string $code
+     * @param string $countryIso2
+     * @return array - Region id and name, if found.
+     */
+    protected function _getRegionByCode(string $code, string $countryIso2): array
+    {
+        $regionFactory = $this->_regionFactory->create()->loadByCode($code, $countryIso2);
+        if ($regionFactory->hasData()) {
+            return ['id' => $regionFactory->getId(), 'name' => $regionFactory->getName()];
+        }
+
+        return ['id' => null, 'name' => null];
     }
 
     /**
