@@ -9,18 +9,22 @@ use Magento\Directory\Model\ResourceModel\Country\CollectionFactory as CountryCo
 use Magento\Framework\App\Config\ScopeConfigInterface;
 use Magento\Framework\App\Helper\Context;
 use Magento\Framework\App\RequestInterface;
+use Magento\Framework\App\ScopeInterface as AppScopeInterface;
 use Magento\Framework\App\State as AppState;
 use Magento\Framework\Data\Form\FormKey;
 use Magento\Framework\Encryption\EncryptorInterface;
 use Magento\Framework\Locale\ResolverInterface;
 use Magento\Framework\UrlInterface;
 use Magento\Store\Api\Data\StoreInterface;
+use Magento\Store\Model\ScopeInterface;
 use Magento\Store\Model\StoreManagerInterface;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use PostcodeEu\AddressValidation\Helper\StoreConfigHelper;
 use PostcodeEu\AddressValidation\Model\Config\Source\NlInputBehavior;
 use PostcodeEu\AddressValidation\Model\Config\Source\ShowHideAddressFields;
+use TypeError;
 
 /**
  * getJsinit() keys and behaviour flags for StoreConfigHelper.
@@ -28,6 +32,9 @@ use PostcodeEu\AddressValidation\Model\Config\Source\ShowHideAddressFields;
 class StoreConfigHelperTest extends TestCase
 {
     private const SUPPORTED_COUNTRIES_JSON = '[{"iso2":"NL","iso3":"nld"},{"iso2":"BE","iso3":"bel"}]';
+
+    private const MULTI_COUNTRY_JSON = '[{"iso2":"NL","iso3":"nld"},{"iso2":"BE","iso3":"bel"},'
+        . '{"iso2":"DE","iso3":"deu"},{"iso2":"FR","iso3":"fra"}]';
 
     #[Test]
     public function frontend_init_config_includes_api_urls_and_flags(): void
@@ -90,24 +97,318 @@ class StoreConfigHelperTest extends TestCase
         );
     }
 
+    #[Test]
+    public function known_alias_resolves_to_full_config_path(): void
+    {
+        $scopeConfig = $this->createMock(ScopeConfigInterface::class);
+        $scopeConfig->expects($this->once())
+            ->method('getValue')
+            ->with(StoreConfigHelper::PATH['api_key'], ScopeInterface::SCOPE_STORES, null)
+            ->willReturn('KEY');
+
+        $helper = $this->createHelper([], 'frontend', ['scopeConfig' => $scopeConfig]);
+
+        $this->assertSame('KEY', $helper->getValue('api_key'));
+    }
+
+    #[Test]
+    public function unknown_key_passes_through_unchanged(): void
+    {
+        $scopeConfig = $this->createMock(ScopeConfigInterface::class);
+        $scopeConfig->expects($this->once())
+            ->method('getValue')
+            ->with('custom/raw/path', ScopeInterface::SCOPE_STORES, null)
+            ->willReturn('VALUE');
+
+        $helper = $this->createHelper([], 'frontend', ['scopeConfig' => $scopeConfig]);
+
+        $this->assertSame('VALUE', $helper->getValue('custom/raw/path'));
+    }
+
+    #[Test]
+    public function known_flag_alias_resolves_to_full_config_path(): void
+    {
+        $scopeConfig = $this->createMock(ScopeConfigInterface::class);
+        $scopeConfig->expects($this->once())
+            ->method('isSetFlag')
+            ->with(StoreConfigHelper::PATH['enabled'], ScopeInterface::SCOPE_STORES, null)
+            ->willReturn(true);
+
+        $helper = $this->createHelper([], 'frontend', ['scopeConfig' => $scopeConfig]);
+
+        $this->assertTrue($helper->isSetFlag('enabled'));
+    }
+
+    #[Test]
+    public function unknown_flag_key_passes_through_unchanged(): void
+    {
+        $scopeConfig = $this->createMock(ScopeConfigInterface::class);
+        $scopeConfig->expects($this->once())
+            ->method('isSetFlag')
+            ->with('custom/raw/flag', ScopeInterface::SCOPE_STORES, null)
+            ->willReturn(false);
+
+        $helper = $this->createHelper([], 'frontend', ['scopeConfig' => $scopeConfig]);
+
+        $this->assertFalse($helper->isSetFlag('custom/raw/flag'));
+    }
+
+    #[Test]
+    public function explicit_store_id_scopes_to_given_store(): void
+    {
+        $scopeConfig = $this->createMock(ScopeConfigInterface::class);
+        $scopeConfig->expects($this->once())
+            ->method('getValue')
+            ->with(StoreConfigHelper::PATH['api_key'], ScopeInterface::SCOPE_STORES, 7)
+            ->willReturn('KEY');
+
+        $helper = $this->createHelper([], 'frontend', ['scopeConfig' => $scopeConfig]);
+
+        $this->assertSame('KEY', $helper->getValue('api_key', 7));
+    }
+
+    #[Test]
+    public function admin_area_takes_scope_from_store_request_param(): void
+    {
+        $request = $this->createRequest([ScopeInterface::SCOPE_STORE => '5']);
+        $scopeConfig = $this->createMock(ScopeConfigInterface::class);
+        $scopeConfig->expects($this->once())
+            ->method('getValue')
+            ->with(StoreConfigHelper::PATH['api_key'], ScopeInterface::SCOPE_STORES, 5)
+            ->willReturn('KEY');
+
+        $helper = $this->createHelper([], FrontNameResolver::AREA_CODE, [
+            'request' => $request,
+            'scopeConfig' => $scopeConfig,
+        ]);
+
+        $this->assertSame('KEY', $helper->getValue('api_key'));
+    }
+
+    #[Test]
+    public function non_admin_area_scopes_to_default_store(): void
+    {
+        $scopeConfig = $this->createMock(ScopeConfigInterface::class);
+        $scopeConfig->expects($this->once())
+            ->method('isSetFlag')
+            ->with(StoreConfigHelper::PATH['enabled'], ScopeInterface::SCOPE_STORES, null)
+            ->willReturn(true);
+
+        $helper = $this->createHelper([], 'frontend', ['scopeConfig' => $scopeConfig]);
+
+        $this->assertTrue($helper->isSetFlag('enabled'));
+    }
+
+    #[Test]
+    public function store_param_maps_to_store_scope(): void
+    {
+        $helper = $this->createHelper([], 'frontend', [
+            'request' => $this->createRequest([ScopeInterface::SCOPE_STORE => '3']),
+        ]);
+
+        $this->assertSame([ScopeInterface::SCOPE_STORES, 3], $helper->getScopeFromRequest());
+    }
+
+    #[Test]
+    public function website_param_maps_to_website_scope(): void
+    {
+        $helper = $this->createHelper([], 'frontend', [
+            'request' => $this->createRequest([ScopeInterface::SCOPE_WEBSITE => '4']),
+        ]);
+
+        $this->assertSame([ScopeInterface::SCOPE_WEBSITES, 4], $helper->getScopeFromRequest());
+    }
+
+    #[Test]
+    public function missing_scope_params_map_to_default_scope(): void
+    {
+        $helper = $this->createHelper([], 'frontend', ['request' => $this->createRequest([])]);
+
+        $this->assertSame([AppScopeInterface::SCOPE_DEFAULT, 0], $helper->getScopeFromRequest());
+    }
+
+    #[Test]
+    public function store_param_wins_over_website_param(): void
+    {
+        $helper = $this->createHelper([], 'frontend', [
+            'request' => $this->createRequest([
+                ScopeInterface::SCOPE_STORE => '3',
+                ScopeInterface::SCOPE_WEBSITE => '4',
+            ]),
+        ]);
+
+        $this->assertSame([ScopeInterface::SCOPE_STORES, 3], $helper->getScopeFromRequest());
+    }
+
+    #[Test]
+    public function secret_with_colon_is_decrypted(): void
+    {
+        $encryptor = $this->createMock(EncryptorInterface::class);
+        $encryptor->expects($this->once())
+            ->method('decrypt')
+            ->with('0:encrypted')
+            ->willReturn('plainsecret');
+
+        $helper = $this->createHelper([
+            StoreConfigHelper::PATH['api_key'] => 'KEY',
+            StoreConfigHelper::PATH['api_secret'] => '0:encrypted',
+        ], 'frontend', ['encryptor' => $encryptor]);
+
+        $this->assertSame(['key' => 'KEY', 'secret' => 'plainsecret'], $helper->getCredentials());
+    }
+
+    #[Test]
+    public function secret_without_colon_is_not_decrypted(): void
+    {
+        $encryptor = $this->createMock(EncryptorInterface::class);
+        $encryptor->expects($this->never())->method('decrypt');
+
+        $helper = $this->createHelper([
+            StoreConfigHelper::PATH['api_key'] => 'KEY',
+            StoreConfigHelper::PATH['api_secret'] => 'plainsecret',
+        ], 'frontend', ['encryptor' => $encryptor]);
+
+        $this->assertSame(['key' => 'KEY', 'secret' => 'plainsecret'], $helper->getCredentials());
+    }
+
+    #[Test]
+    #[DataProvider('missingCredentialConfigProvider')]
+    public function missing_credentials_return_empty_strings(array $config, array $expected): void
+    {
+        $helper = $this->createHelper($config);
+
+        $this->assertSame($expected, $helper->getCredentials());
+    }
+
+    /**
+     * @return array<string, array{array<string, string>, array{key: string, secret: string}}>
+     */
+    public static function missingCredentialConfigProvider(): array
+    {
+        return [
+            'both missing' => [[], ['key' => '', 'secret' => '']],
+            'key missing' => [
+                [StoreConfigHelper::PATH['api_secret'] => 'secret'],
+                ['key' => '', 'secret' => 'secret'],
+            ],
+            'secret missing' => [
+                [StoreConfigHelper::PATH['api_key'] => 'key'],
+                ['key' => 'key', 'secret' => ''],
+            ],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('credentialPresenceProvider')]
+    public function credential_presence_follows_isset_semantics(array $config, bool $expected): void
+    {
+        $helper = $this->createHelper($config);
+
+        $this->assertSame($expected, $helper->hasCredentials());
+    }
+
+    /**
+     * @return array<string, array{array<string, string>, bool}>
+     */
+    public static function credentialPresenceProvider(): array
+    {
+        return [
+            'both present' => [
+                [StoreConfigHelper::PATH['api_key'] => 'key', StoreConfigHelper::PATH['api_secret'] => 'secret'],
+                true,
+            ],
+            'key missing' => [[StoreConfigHelper::PATH['api_secret'] => 'secret'], false],
+            'secret missing' => [[StoreConfigHelper::PATH['api_key'] => 'key'], false],
+            'both missing' => [[], false],
+            'empty strings count as present' => [
+                [StoreConfigHelper::PATH['api_key'] => '', StoreConfigHelper::PATH['api_secret'] => ''],
+                true,
+            ],
+        ];
+    }
+
+    #[Test]
+    public function no_disabled_countries_returns_all_supported_iso2_codes(): void
+    {
+        $helper = $this->createHelper([
+            StoreConfigHelper::PATH['supported_countries'] => self::MULTI_COUNTRY_JSON,
+        ]);
+
+        $this->assertSame(['NL', 'BE', 'DE', 'FR'], $helper->getEnabledCountries());
+    }
+
+    #[Test]
+    public function disabled_countries_removed_and_reindexed(): void
+    {
+        $helper = $this->createHelper([
+            StoreConfigHelper::PATH['supported_countries'] => self::MULTI_COUNTRY_JSON,
+            StoreConfigHelper::PATH['disabled_countries'] => 'BE,DE',
+        ]);
+
+        $this->assertSame(['NL', 'FR'], $helper->getEnabledCountries());
+    }
+
+    #[Test]
+    public function missing_supported_countries_config_returns_empty_array(): void
+    {
+        $helper = $this->createHelper([]);
+
+        $this->assertSame([], $helper->getSupportedCountries());
+    }
+
+    #[Test]
+    public function invalid_supported_countries_json_raises_type_error(): void
+    {
+        $helper = $this->createHelper([
+            StoreConfigHelper::PATH['supported_countries'] => 'not-json',
+        ]);
+
+        $this->expectException(TypeError::class);
+
+        $helper->getSupportedCountries();
+    }
+
+    #[Test]
+    public function module_version_returned_when_configured(): void
+    {
+        $helper = $this->createHelper([
+            StoreConfigHelper::PATH['module_version'] => '1.2.3',
+        ]);
+
+        $this->assertSame('1.2.3', $helper->getModuleVersion());
+    }
+
+    #[Test]
+    public function missing_module_version_falls_back_to_unknown(): void
+    {
+        $helper = $this->createHelper([]);
+
+        $this->assertSame('UNKNOWN', $helper->getModuleVersion());
+    }
+
     /**
      * @param array<string, string|null> $config
      * @param string $areaCode
+     * @param array{scopeConfig?: ScopeConfigInterface, request?: RequestInterface, encryptor?: EncryptorInterface} $overrides
      * @return StoreConfigHelper
      */
-    private function createHelper(array $config = [], string $areaCode = 'frontend'): StoreConfigHelper
+    private function createHelper(array $config = [], string $areaCode = 'frontend', array $overrides = []): StoreConfigHelper
     {
-        $scopeConfig = $this->createStub(ScopeConfigInterface::class);
-        $scopeConfig->method('getValue')->willReturnCallback(
-            function (string $path) use ($config) {
-                return $config[$path] ?? null;
-            }
-        );
-        $scopeConfig->method('isSetFlag')->willReturnCallback(
-            function (string $path) use ($config) {
-                return !empty($config[$path]);
-            }
-        );
+        if (isset($overrides['scopeConfig'])) {
+            $scopeConfig = $overrides['scopeConfig'];
+        } else {
+            $scopeConfig = $this->createStub(ScopeConfigInterface::class);
+            $scopeConfig->method('getValue')->willReturnCallback(
+                function (string $path) use ($config) {
+                    return $config[$path] ?? null;
+                }
+            );
+            $scopeConfig->method('isSetFlag')->willReturnCallback(
+                function (string $path) use ($config) {
+                    return !empty($config[$path]);
+                }
+            );
+        }
 
         $urlBuilder = $this->createStub(UrlInterface::class);
         $urlBuilder->method('getBaseUrl')->willReturn('https://example.com/');
@@ -115,7 +416,9 @@ class StoreConfigHelperTest extends TestCase
         $context = $this->createStub(Context::class);
         $context->method('getScopeConfig')->willReturn($scopeConfig);
         $context->method('getUrlBuilder')->willReturn($urlBuilder);
-        $context->method('getRequest')->willReturn($this->createStub(RequestInterface::class));
+        $context->method('getRequest')->willReturn(
+            $overrides['request'] ?? $this->createStub(RequestInterface::class)
+        );
 
         $store = $this->createStub(StoreInterface::class);
         $store->method('getCode')->willReturn('default');
@@ -136,12 +439,25 @@ class StoreConfigHelperTest extends TestCase
             $context,
             $storeManager,
             $this->createStub(DeveloperHelper::class),
-            $this->createStub(EncryptorInterface::class),
+            $overrides['encryptor'] ?? $this->createStub(EncryptorInterface::class),
             $this->createStub(CountryCollectionFactory::class),
             $this->createStub(ResolverInterface::class),
             $formKey,
             $appState,
             $backendUrl
         );
+    }
+
+    /**
+     * @param array<string, string> $params
+     */
+    private function createRequest(array $params): RequestInterface
+    {
+        $request = $this->createStub(RequestInterface::class);
+        $request->method('getParam')->willReturnCallback(
+            fn (string $param) => $params[$param] ?? null
+        );
+
+        return $request;
     }
 }
