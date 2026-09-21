@@ -114,6 +114,8 @@ class CityTest extends TestCase
     #[Test]
     public function trailing_newline_within_length_is_accepted(): void
     {
+        // Pins source issue: the City regex matches \s within a greedy {1,100}, so a trailing newline
+        // inside the length limit is accepted; only the over-length case is rejected.
         $validator = new City();
 
         $result = $validator->isValid($this->createCustomer("Amsterdam\n"));

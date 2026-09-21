@@ -165,6 +165,8 @@ class PostcodeModelTest extends TestCase
     #[Test]
     public function details_country_forwards_dispatch_country_alongside_context(): void
     {
+        // Pins source issue: PostcodeModel.php:65 passes $dispatchCountry to ApiClientHelper::getAddressDetails(),
+        // which accepts only $context and silently ignores the second argument.
         $context = self::ADDRESS_CONTEXT;
         $dispatchCountry = 'NLD';
         $payload = self::dutchAddressDetails();

@@ -36,6 +36,7 @@ class MagentoDebugInfoTest extends TestCase
         $this->assertInstanceOf(Configuration::class, $info->getConfiguration());
         $this->assertSame('api-key', $info->getConfiguration()->getKey());
         $this->assertSame('api-secret', $info->getConfiguration()->getSecret());
+        // Pins source issue: modules are stored as raw arrays though the interface documents MagentoModuleInterface[].
         $this->assertSame($data['modules'], $info->getModules());
     }
 

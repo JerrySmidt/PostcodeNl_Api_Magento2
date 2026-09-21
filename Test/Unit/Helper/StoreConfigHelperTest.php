@@ -302,6 +302,7 @@ class StoreConfigHelperTest extends TestCase
     #[DataProvider('credentialPresenceProvider')]
     public function credential_presence_follows_isset_semantics(array $config, bool $expected): void
     {
+        // Pins surprising behaviour: hasCredentials() uses isset semantics, so empty-string credentials count as present.
         $helper = $this->createHelper($config);
 
         $this->assertSame($expected, $helper->hasCredentials());
@@ -359,6 +360,7 @@ class StoreConfigHelperTest extends TestCase
     #[Test]
     public function invalid_supported_countries_json_raises_type_error(): void
     {
+        // Pins source issue: getSupportedCountries() has no json_decode null guard, so invalid JSON surfaces as TypeError.
         $helper = $this->createHelper([
             StoreConfigHelper::PATH['supported_countries'] => 'not-json',
         ]);

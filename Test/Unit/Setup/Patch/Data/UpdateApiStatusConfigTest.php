@@ -71,6 +71,8 @@ class UpdateApiStatusConfigTest extends TestCase
 
         $resourceConfig = $this->createMock(Config::class);
         $resourceConfig->expects($this->never())->method('saveConfig');
+        // Pins source issue: the already-migrated early return also skips deleteConfig(), so the obsolete
+        // postcodenl_api/general/* paths are never cleaned once a scope has been migrated.
         $resourceConfig->expects($this->never())->method('deleteConfig');
 
         $patch = $this->createPatch($connection, $apiClientHelper, $resourceConfig);
