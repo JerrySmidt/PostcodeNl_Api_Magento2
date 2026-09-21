@@ -44,6 +44,25 @@ class ApiTest extends TestCase
     }
 
     #[Test]
+    public function whitespace_only_term_is_forwarded_not_rejected(): void
+    {
+        $postcodeModel = $this->createMock(PostcodeModelInterface::class);
+        $controller = $this->createController($postcodeModel);
+        $this->stubRequestParams([
+            'method' => 'autocomplete',
+            'context' => 'nld',
+            'term' => '   ',
+        ]);
+        $postcodeModel->expects($this->once())
+            ->method('getAddressAutocomplete')
+            ->with('nld', '   ')
+            ->willReturn($this->createStub(AutocompleteInterface::class));
+        $this->serviceOutputProcessor->method('process')->willReturn(['matches' => []]);
+
+        $controller->execute();
+    }
+
+    #[Test]
     public function postcode_and_house_number_are_trimmed(): void
     {
         $postcodeModel = $this->createMock(PostcodeModelInterface::class);
