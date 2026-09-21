@@ -68,15 +68,27 @@ class ApiAvailabilityMonitorTest extends TestCase
     #[Test]
     public function outage_half_opens_once_cooldown_elapsed(): void
     {
-        $cache = $this->createCacheWithState([
+        $cache = $this->createCapturingCache(json_encode([
             'failure_times' => [time() - 2],
-            'unavailable_since' => time() - 2,
-            'trip_count' => 1,
+            'unavailable_since' => time() - 10,
+            'trip_count' => 3,
             'half_open' => false,
-        ]);
-        $monitor = $this->createMonitor(['api_cooldown_seconds' => '1'], $cache);
+        ]));
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects($this->once())->method('notice')
+            ->with($this->stringContains('half-opened'));
+        $logger->expects($this->once())->method('warning');
+        $monitor = $this->createMonitor(['api_cooldown_seconds' => '1'], $cache, $logger);
 
         $this->assertTrue($monitor->isAvailable());
+
+        $monitor->recordFailure();
+
+        $saved = $this->savedStates[0];
+        $this->assertSame(4, $saved['trip_count']);
+        $this->assertFalse($saved['half_open']);
+        $this->assertSame([], $saved['failure_times']);
+        $this->assertNotNull($saved['unavailable_since']);
     }
 
     #[Test]
