@@ -571,6 +571,8 @@ class ApiClientHelperTest extends TestCase
         $result = $helper->getAddressDetails('ctx');
 
         $this->assertSame('Combination not found.', (string)$result['message']);
+        $this->assertArrayNotHasKey('exception', $result);
+        $this->assertArrayNotHasKey('magento_debug_info', $result);
     }
 
     #[Test]
@@ -594,6 +596,9 @@ class ApiClientHelperTest extends TestCase
         $result = $helper->getAddressDetails('ctx');
 
         $this->assertTrue($result['error']);
+        $this->assertSame('Something went wrong. Please try again.', (string)$result['message']);
+        $this->assertArrayNotHasKey('exception', $result);
+        $this->assertArrayNotHasKey('magento_debug_info', $result);
     }
 
     #[Test]
@@ -621,6 +626,9 @@ class ApiClientHelperTest extends TestCase
         $result = $helper->getAddressDetails('ctx');
 
         $this->assertTrue($result['error']);
+        $this->assertSame('Something went wrong. Please try again.', (string)$result['message']);
+        $this->assertArrayNotHasKey('exception', $result);
+        $this->assertArrayNotHasKey('magento_debug_info', $result);
     }
 
     /**
@@ -784,6 +792,9 @@ class ApiClientHelperTest extends TestCase
         $result = $helper->validateAddress('nld');
 
         $this->assertTrue($result['error']);
+        $this->assertSame('Something went wrong. Please try again.', (string)$result['message']);
+        $this->assertArrayNotHasKey('exception', $result);
+        $this->assertArrayNotHasKey('magento_debug_info', $result);
     }
 
     #[Test]
