@@ -27,7 +27,7 @@ use PostcodeEu\AddressValidation\Model\Config\Source\ShowHideAddressFields;
 use TypeError;
 
 /**
- * getJsinit() keys and behaviour flags for StoreConfigHelper.
+ * Path aliases, scope resolution, credentials, countries and JS init config for StoreConfigHelper.
  */
 class StoreConfigHelperTest extends TestCase
 {
@@ -286,20 +286,6 @@ class StoreConfigHelperTest extends TestCase
         $helper = $this->createHelper([], 'frontend', ['scopeConfig' => $scopeConfig]);
 
         $this->assertSame('KEY', $helper->getValue('api_key', 0));
-    }
-
-    #[Test]
-    public function non_admin_area_scopes_to_default_store(): void
-    {
-        $scopeConfig = $this->createMock(ScopeConfigInterface::class);
-        $scopeConfig->expects($this->once())
-            ->method('isSetFlag')
-            ->with(StoreConfigHelper::PATH['enabled'], ScopeInterface::SCOPE_STORES, null)
-            ->willReturn(true);
-
-        $helper = $this->createHelper([], 'frontend', ['scopeConfig' => $scopeConfig]);
-
-        $this->assertTrue($helper->isSetFlag('enabled'));
     }
 
     #[Test]

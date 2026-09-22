@@ -28,7 +28,9 @@ class PostcodeApiClientTest extends TestCase
     #[Test]
     public function successful_api_response_returns_decoded_json(): void
     {
-        $result = $this->createClientWithResponse(200, '{"foo":"bar"}')->accountInfo();
+        $client = $this->createClientWithResponse(200, '{"foo":"bar"}');
+
+        $result = $client->accountInfo();
 
         $this->assertSame(['foo' => 'bar'], $result);
     }

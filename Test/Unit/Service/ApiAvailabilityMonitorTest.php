@@ -198,9 +198,9 @@ class ApiAvailabilityMonitorTest extends TestCase
     public static function failedProbeProvider(): array
     {
         return [
-            'first trip doubles base cooldown' => [1, 60],
-            'second trip doubles again' => [2, 120],
-            'cooldown is capped' => [6, 900],
+            'trip count 1' => [1, 60],
+            'trip count 2' => [2, 120],
+            'trip count capped' => [6, 900],
         ];
     }
 

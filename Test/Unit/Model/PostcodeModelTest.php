@@ -18,7 +18,7 @@ use PostcodeEu\AddressValidation\Service\CsrfValidator;
  */
 class PostcodeModelTest extends TestCase
 {
-    private const ADDRESS_CONTEXT = 'nld6SVBbpsiriOTHIBOu9LISmTCTzVymIt8qTaveozBbMHLPzZPhaKDwTsP3z64fhxMDVxyuquqSVebBGFPdvNlruQet2oZxo8fuKEwzv1rDfBNRHcZwLxThfR9rovJwW7Yqu2Gu0ZPFHobgkC56R';
+    private const ADDRESS_CONTEXT = 'ctx-1';
 
     #[Test]
     #[DataProvider('requestEntryProvider')]

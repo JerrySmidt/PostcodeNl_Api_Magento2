@@ -14,7 +14,7 @@ use PostcodeEu\AddressValidation\Api\PostcodeModelInterface;
 use PostcodeEu\AddressValidation\Controller\Adminhtml\Address\Api;
 
 /**
- * Autocomplete term whitespace handling in the admin address API controller.
+ * Parameter validation and whitespace handling in the admin address API controller.
  */
 class ApiTest extends TestCase
 {

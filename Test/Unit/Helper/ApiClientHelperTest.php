@@ -684,7 +684,7 @@ class ApiClientHelperTest extends TestCase
 
     #[Test]
     #[DataProvider('handledExceptionProvider')]
-    public function unhandled_client_failure_maps_to_http_status(string $exceptionClass, int $expectedCode): void
+    public function handled_client_failure_maps_to_http_status(string $exceptionClass, int $expectedCode): void
     {
         $client = $this->createStub(PostcodeApiClient::class);
         $client->method('internationalGetDetails')

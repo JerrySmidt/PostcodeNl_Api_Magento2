@@ -112,6 +112,20 @@ class CityTest extends TestCase
     }
 
     #[Test]
+    public function empty_city_is_rejected(): void
+    {
+        $validator = new City();
+
+        $result = $validator->isValid($this->createCustomer(''));
+
+        $this->assertFalse($result);
+        $messages = $validator->getMessages();
+        $message = reset($messages);
+        $this->assertIsArray($message);
+        $this->assertArrayHasKey('city', $message);
+    }
+
+    #[Test]
     public function trailing_newline_within_length_is_accepted(): void
     {
         // Pins source issue: the City regex matches \s within a greedy {1,100}, so a trailing newline

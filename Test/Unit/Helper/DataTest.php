@@ -26,7 +26,7 @@ class DataTest extends TestCase
 {
     #[Test]
     #[DataProvider('disabledProvider')]
-    public function module_disabled_when_any_gate_fails(
+    public function disabled_state_follows_gates(
         bool $enabled,
         string $accountStatus,
         bool $monitorAvailable,
@@ -63,7 +63,7 @@ class DataTest extends TestCase
 
     #[Test]
     #[DataProvider('nlComponentDisabledProvider')]
-    public function nl_component_disabled_when_any_gate_fails(
+    public function nl_component_disabled_state_follows_gates(
         bool $enabled,
         array $enabledCountries,
         string $inputBehavior,
@@ -95,7 +95,7 @@ class DataTest extends TestCase
 
     #[Test]
     #[DataProvider('formattedOutputDisabledProvider')]
-    public function formatted_output_disabled_when_any_gate_fails(
+    public function formatted_output_disabled_state_follows_gates(
         bool $enabled,
         string $showHideAddressFields,
         bool $expected
@@ -124,7 +124,7 @@ class DataTest extends TestCase
 
     #[Test]
     #[DataProvider('autofillBypassDisabledProvider')]
-    public function autofill_bypass_disabled_when_any_gate_fails(
+    public function autofill_bypass_disabled_state_follows_gates(
         bool $enabled,
         string $showHideAddressFields,
         bool $allowAutofillBypass,

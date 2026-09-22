@@ -19,9 +19,11 @@ class ValidatorPluginTest extends TestCase
 {
     #[Test]
     #[DataProvider('breakChainProvider')]
-    public function matching_version_and_alias_swap_in_city_validator(bool $breakChainOnFailure): void
-    {
-        $plugin = $this->createPlugin('2.4.8');
+    public function matching_version_and_alias_swap_in_city_validator(
+        string $version,
+        bool $breakChainOnFailure
+    ): void {
+        $plugin = $this->createPlugin($version);
 
         $result = $plugin->beforeAddValidator(
             $this->createStub(Validator::class),
@@ -30,25 +32,29 @@ class ValidatorPluginTest extends TestCase
         );
 
         $this->assertIsArray($result);
+        $this->assertCount(2, $result);
         $this->assertInstanceOf(City::class, $result[0]);
         $this->assertSame($breakChainOnFailure, $result[1]);
     }
 
     /**
-     * @return array<string, array{bool}>
+     * @return array<string, array{string, bool}>
      */
     public static function breakChainProvider(): array
     {
         return [
-            'default false' => [false],
-            'true' => [true],
+            '2.4.8 default false' => ['2.4.8', false],
+            '2.4.8 break chain true' => ['2.4.8', true],
+            '2.4.8-p1' => ['2.4.8-p1', false],
         ];
     }
 
     #[Test]
-    public function matching_patch_version_also_swaps(): void
+    public function longer_version_with_2_4_8_prefix_also_swaps(): void
     {
-        $plugin = $this->createPlugin('2.4.8-p1');
+        // Pins source issue: the check is a 5-char prefix match, so any version starting with
+        // '2.4.8' (e.g. 2.4.80) swaps the validator. Fine for Magento's x.y.z scheme, but brittle.
+        $plugin = $this->createPlugin('2.4.80');
 
         $result = $plugin->beforeAddValidator(
             $this->createStub(Validator::class),
@@ -57,7 +63,6 @@ class ValidatorPluginTest extends TestCase
 
         $this->assertIsArray($result);
         $this->assertInstanceOf(City::class, $result[0]);
-        $this->assertFalse($result[1]);
     }
 
     #[Test]
