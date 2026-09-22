@@ -43,6 +43,8 @@ class StoreConfigHelperTest extends TestCase
             StoreConfigHelper::PATH['supported_countries'] => self::SUPPORTED_COUNTRIES_JSON,
             StoreConfigHelper::PATH['disabled_countries'] => 'BE',
             StoreConfigHelper::PATH['allow_pobox_shipping'] => '1',
+            StoreConfigHelper::PATH['change_fields_position'] => '1',
+            StoreConfigHelper::PATH['split_street_values'] => '1',
         ]);
 
         $jsinit = $helper->getJsinit();
@@ -66,6 +68,8 @@ class StoreConfigHelperTest extends TestCase
         $this->assertSame(ShowHideAddressFields::SHOW, $jsinit['show_hide_address_fields']);
         $this->assertFalse($jsinit['debug']);
         $this->assertTrue($jsinit['allow_pobox_shipping']);
+        $this->assertTrue($jsinit['change_fields_position']);
+        $this->assertTrue($jsinit['split_street_values']);
         $this->assertSame(
             [
                 'dutchAddressLookup' => 'https://example.com/postcode-eu/V1/nl/address/{postcode}/{houseNumber}?form_key=FORMKEY',
@@ -75,6 +79,26 @@ class StoreConfigHelperTest extends TestCase
             ],
             $jsinit['api_actions']
         );
+    }
+
+    #[Test]
+    public function init_config_reflects_configured_behavior_and_debug_flag(): void
+    {
+        $developerHelper = $this->createStub(DeveloperHelper::class);
+        $developerHelper->method('isDevAllowed')->willReturn(true);
+
+        $helper = $this->createHelper([
+            StoreConfigHelper::PATH['supported_countries'] => self::SUPPORTED_COUNTRIES_JSON,
+            StoreConfigHelper::PATH['nl_input_behavior'] => NlInputBehavior::FREE,
+            StoreConfigHelper::PATH['show_hide_address_fields'] => ShowHideAddressFields::FORMAT,
+            StoreConfigHelper::PATH['api_debug'] => '1',
+        ], 'frontend', ['developerHelper' => $developerHelper]);
+
+        $jsinit = $helper->getJsinit();
+
+        $this->assertSame(NlInputBehavior::FREE, $jsinit['nl_input_behavior']);
+        $this->assertSame(ShowHideAddressFields::FORMAT, $jsinit['show_hide_address_fields']);
+        $this->assertTrue($jsinit['debug']);
     }
 
     #[Test]
@@ -154,6 +178,36 @@ class StoreConfigHelperTest extends TestCase
     }
 
     #[Test]
+    #[DataProvider('debuggingProvider')]
+    public function debugging_requires_flag_and_developer_allowlist(
+        bool $debugFlag,
+        bool $devAllowed,
+        bool $expected
+    ): void {
+        $developerHelper = $this->createStub(DeveloperHelper::class);
+        $developerHelper->method('isDevAllowed')->willReturn($devAllowed);
+
+        $helper = $this->createHelper([
+            StoreConfigHelper::PATH['api_debug'] => $debugFlag ? '1' : null,
+        ], 'frontend', ['developerHelper' => $developerHelper]);
+
+        $this->assertSame($expected, $helper->isDebugging());
+    }
+
+    /**
+     * @return array<string, array{bool, bool, bool}>
+     */
+    public static function debuggingProvider(): array
+    {
+        return [
+            'flag on, dev allowed' => [true, true, true],
+            'flag on, dev not allowed' => [true, false, false],
+            'flag off, dev allowed' => [false, true, false],
+            'flag off, dev not allowed' => [false, false, false],
+        ];
+    }
+
+    #[Test]
     public function explicit_store_id_scopes_to_given_store(): void
     {
         $scopeConfig = $this->createMock(ScopeConfigInterface::class);
@@ -183,6 +237,55 @@ class StoreConfigHelperTest extends TestCase
         ]);
 
         $this->assertSame('KEY', $helper->getValue('api_key'));
+    }
+
+    #[Test]
+    public function admin_area_takes_scope_from_website_request_param(): void
+    {
+        $request = $this->createRequest([ScopeInterface::SCOPE_WEBSITE => '4']);
+        $scopeConfig = $this->createMock(ScopeConfigInterface::class);
+        $scopeConfig->expects($this->once())
+            ->method('getValue')
+            ->with(StoreConfigHelper::PATH['api_key'], ScopeInterface::SCOPE_WEBSITES, 4)
+            ->willReturn('KEY');
+
+        $helper = $this->createHelper([], FrontNameResolver::AREA_CODE, [
+            'request' => $request,
+            'scopeConfig' => $scopeConfig,
+        ]);
+
+        $this->assertSame('KEY', $helper->getValue('api_key'));
+    }
+
+    #[Test]
+    public function admin_area_without_scope_params_uses_default_scope_with_null_code(): void
+    {
+        $scopeConfig = $this->createMock(ScopeConfigInterface::class);
+        $scopeConfig->expects($this->once())
+            ->method('getValue')
+            ->with(StoreConfigHelper::PATH['api_key'], AppScopeInterface::SCOPE_DEFAULT, null)
+            ->willReturn('KEY');
+
+        $helper = $this->createHelper([], FrontNameResolver::AREA_CODE, [
+            'request' => $this->createRequest([]),
+            'scopeConfig' => $scopeConfig,
+        ]);
+
+        $this->assertSame('KEY', $helper->getValue('api_key'));
+    }
+
+    #[Test]
+    public function explicit_zero_store_id_scopes_to_store_zero(): void
+    {
+        $scopeConfig = $this->createMock(ScopeConfigInterface::class);
+        $scopeConfig->expects($this->once())
+            ->method('getValue')
+            ->with(StoreConfigHelper::PATH['api_key'], ScopeInterface::SCOPE_STORES, 0)
+            ->willReturn('KEY');
+
+        $helper = $this->createHelper([], 'frontend', ['scopeConfig' => $scopeConfig]);
+
+        $this->assertSame('KEY', $helper->getValue('api_key', 0));
     }
 
     #[Test]
@@ -391,7 +494,7 @@ class StoreConfigHelperTest extends TestCase
     /**
      * @param array<string, string|null> $config
      * @param string $areaCode
-     * @param array{scopeConfig?: ScopeConfigInterface, request?: RequestInterface, encryptor?: EncryptorInterface} $overrides
+     * @param array{scopeConfig?: ScopeConfigInterface, request?: RequestInterface, encryptor?: EncryptorInterface, developerHelper?: DeveloperHelper} $overrides
      * @return StoreConfigHelper
      */
     private function createHelper(array $config = [], string $areaCode = 'frontend', array $overrides = []): StoreConfigHelper
@@ -440,7 +543,7 @@ class StoreConfigHelperTest extends TestCase
         return new StoreConfigHelper(
             $context,
             $storeManager,
-            $this->createStub(DeveloperHelper::class),
+            $overrides['developerHelper'] ?? $this->createStub(DeveloperHelper::class),
             $overrides['encryptor'] ?? $this->createStub(EncryptorInterface::class),
             $this->createStub(CountryCollectionFactory::class),
             $this->createStub(ResolverInterface::class),

@@ -20,6 +20,8 @@ use PostcodeEu\AddressValidation\Helper\StoreConfigHelper;
 use PostcodeEu\AddressValidation\Service\ApiAvailabilityMonitor;
 use PostcodeEu\AddressValidation\Service\Exception\AuthenticationException;
 use PostcodeEu\AddressValidation\Service\Exception\BadRequestException;
+use PostcodeEu\AddressValidation\Service\Exception\CurlException;
+use PostcodeEu\AddressValidation\Service\Exception\ForbiddenException;
 use PostcodeEu\AddressValidation\Service\Exception\NotFoundException;
 use PostcodeEu\AddressValidation\Service\Exception\ServiceUnavailableException;
 use PostcodeEu\AddressValidation\Service\Exception\UnexpectedException;
@@ -105,6 +107,43 @@ class ApiClientHelperTest extends TestCase
     }
 
     #[Test]
+    public function dutch_lookup_forwards_postcode_and_parsed_house_number(): void
+    {
+        $client = $this->createMock(PostcodeApiClient::class);
+        $client->expects($this->once())
+            ->method('dutchAddressByPostcode')
+            ->with('1234AB', 42, 'A')
+            ->willReturn([
+                'houseNumber' => 42,
+                'houseNumberAddition' => 'A',
+                'houseNumberAdditions' => ['A'],
+                'street' => 'Damrak',
+                'building' => '42',
+            ]);
+
+        $helper = $this->createAvailableHelper([], ['client' => $client]);
+
+        $result = $helper->getNlAddress('1234AB', '42A');
+
+        $this->assertSame('valid', $result['status']);
+    }
+
+    #[Test]
+    public function postcode_with_surrounding_whitespace_is_rejected(): void
+    {
+        // Pins source issue: the Dutch postcode regex runs on raw input while PostcodeApiClient trims first.
+        $client = $this->createMock(PostcodeApiClient::class);
+        $client->expects($this->never())->method('dutchAddressByPostcode');
+
+        $helper = $this->createAvailableHelper([], ['client' => $client]);
+
+        $result = $helper->getNlAddress(' 1234AB ', '42');
+
+        $this->assertTrue($result['error']);
+        $this->assertSame('Invalid zip code.', (string) $result['message']);
+    }
+
+    #[Test]
     public function valid_lookup_returns_formatted_addition_options(): void
     {
         $address = [
@@ -155,6 +194,32 @@ class ApiClientHelperTest extends TestCase
         $this->assertSame(
             ['label' => '42 C (unknown addition)', 'value' => '42 C', 'houseNumberAddition' => 'C'],
             $result['address']['houseNumberAdditions'][2]
+        );
+    }
+
+    #[Test]
+    public function additions_present_without_requested_addition_marks_incorrect_without_unknown_option(): void
+    {
+        $client = $this->createStub(PostcodeApiClient::class);
+        $client->method('dutchAddressByPostcode')->willReturn([
+            'houseNumber' => 42,
+            'houseNumberAddition' => null,
+            'houseNumberAdditions' => ['A', 'B'],
+            'street' => 'Damrak',
+            'building' => '42',
+        ]);
+
+        $helper = $this->createAvailableHelper([], ['client' => $client]);
+
+        $result = $helper->getNlAddress('1234AB', '42');
+
+        $this->assertSame('houseNumberAdditionIncorrect', $result['status']);
+        $this->assertSame(
+            [
+                ['label' => '42 A', 'value' => '42 A', 'houseNumberAddition' => 'A'],
+                ['label' => '42 B', 'value' => '42 B', 'houseNumberAddition' => 'B'],
+            ],
+            $result['address']['houseNumberAdditions']
         );
     }
 
@@ -232,7 +297,7 @@ class ApiClientHelperTest extends TestCase
             'request' => $request,
             'addressHelper' => $addressHelper,
             'regionFactory' => $this->createRegionFactory([
-                'name:North Holland' => ['found' => true, 'id' => 11, 'name' => 'North Holland'],
+                'NL:name:North Holland' => ['found' => true, 'id' => 11, 'name' => 'North Holland'],
             ]),
         ]);
 
@@ -268,7 +333,7 @@ class ApiClientHelperTest extends TestCase
             'response' => $responseMock,
             'addressHelper' => $addressHelper,
             'regionFactory' => $this->createRegionFactory([
-                'name:North Holland' => ['found' => true, 'id' => 11, 'name' => 'North Holland'],
+                'NL:name:North Holland' => ['found' => true, 'id' => 11, 'name' => 'North Holland'],
             ]),
         ]);
 
@@ -468,7 +533,7 @@ class ApiClientHelperTest extends TestCase
             'client' => $client,
             'addressHelper' => $addressHelper,
             'regionFactory' => $this->createRegionFactory([
-                'name:Unknown Province' => ['found' => false],
+                'NL:name:Unknown Province' => ['found' => false],
             ]),
         ]);
 
@@ -486,65 +551,81 @@ class ApiClientHelperTest extends TestCase
             'netherlands province' => [
                 'NL',
                 ['nldProvince' => ['name' => 'North Holland']],
-                ['name:North Holland' => ['found' => true, 'id' => 11, 'name' => 'North Holland']],
+                ['NL:name:North Holland' => ['found' => true, 'id' => 11, 'name' => 'North Holland']],
                 ['id' => 11, 'name' => 'North Holland'],
             ],
             'belgium province' => [
                 'BE',
                 ['belProvince' => ['primaryName' => 'Antwerp']],
-                ['name:Antwerp' => ['found' => true, 'id' => 21, 'name' => 'Antwerp']],
+                ['BE:name:Antwerp' => ['found' => true, 'id' => 21, 'name' => 'Antwerp']],
                 ['id' => 21, 'name' => 'Antwerp'],
             ],
             'belgium region fallback' => [
                 'BE',
                 ['belRegion' => ['primaryName' => 'Brussels']],
-                ['name:Brussels' => ['found' => true, 'id' => 22, 'name' => 'Brussels']],
+                ['BE:name:Brussels' => ['found' => true, 'id' => 22, 'name' => 'Brussels']],
                 ['id' => 22, 'name' => 'Brussels'],
             ],
             'germany federal state' => [
                 'DE',
                 ['deuFederalState' => ['name' => 'Bavaria']],
-                ['name:Bavaria' => ['found' => true, 'id' => 31, 'name' => 'Bavaria']],
+                ['DE:name:Bavaria' => ['found' => true, 'id' => 31, 'name' => 'Bavaria']],
                 ['id' => 31, 'name' => 'Bavaria'],
             ],
             'luxembourg canton' => [
                 'LU',
                 ['luxCanton' => ['name' => 'Luxembourg']],
-                ['name:Luxembourg' => ['found' => true, 'id' => 41, 'name' => 'Luxembourg']],
+                ['LU:name:Luxembourg' => ['found' => true, 'id' => 41, 'name' => 'Luxembourg']],
                 ['id' => 41, 'name' => 'Luxembourg'],
             ],
             'spain slash separated alternatives' => [
                 'ES',
                 ['espProvince' => ['name' => 'Álava/Araba']],
                 [
-                    'name:Álava' => ['found' => false],
-                    'name:Araba' => ['found' => true, 'id' => 51, 'name' => 'Araba/Álava'],
+                    'ES:name:Álava' => ['found' => false],
+                    'ES:name:Araba' => ['found' => true, 'id' => 51, 'name' => 'Araba/Álava'],
                 ],
                 ['id' => 51, 'name' => 'Araba/Álava'],
             ],
             'switzerland canton code' => [
                 'CH',
                 ['cheCanton' => ['code' => 'ZH']],
-                ['code:ZH' => ['found' => true, 'id' => 61, 'name' => 'Zurich']],
+                ['CH:code:ZH' => ['found' => true, 'id' => 61, 'name' => 'Zurich']],
                 ['id' => 61, 'name' => 'Zurich'],
             ],
             'italy territory code' => [
                 'IT',
                 ['itaTerritory' => ['code' => 'RM']],
-                ['code:RM' => ['found' => true, 'id' => 71, 'name' => 'Rome']],
+                ['IT:code:RM' => ['found' => true, 'id' => 71, 'name' => 'Rome']],
                 ['id' => 71, 'name' => 'Rome'],
             ],
             'finland region' => [
                 'FI',
                 ['finRegion' => ['name' => 'Uusimaa']],
-                ['name:Uusimaa' => ['found' => true, 'id' => 81, 'name' => 'Uusimaa']],
+                ['FI:name:Uusimaa' => ['found' => true, 'id' => 81, 'name' => 'Uusimaa']],
                 ['id' => 81, 'name' => 'Uusimaa'],
             ],
             'france department' => [
                 'FR',
                 ['fraDepartment' => ['name' => 'Paris']],
-                ['name:Paris' => ['found' => true, 'id' => 91, 'name' => 'Paris']],
+                ['FR:name:Paris' => ['found' => true, 'id' => 91, 'name' => 'Paris']],
                 ['id' => 91, 'name' => 'Paris'],
+            ],
+            'switzerland canton code not found' => [
+                'CH', ['cheCanton' => ['code' => 'XX']], [], ['id' => null, 'name' => null],
+            ],
+            'italy territory code not found' => [
+                'IT', ['itaTerritory' => ['code' => 'XX']], [], ['id' => null, 'name' => null],
+            ],
+            'austria has no region mapping' => ['AT', [], [], ['id' => null, 'name' => null]],
+            'denmark has no region mapping' => ['DK', [], [], ['id' => null, 'name' => null]],
+            'norway has no region mapping' => ['NO', [], [], ['id' => null, 'name' => null]],
+            'sweden has no region mapping' => ['SE', [], [], ['id' => null, 'name' => null]],
+            'wrong country does not resolve region' => [
+                'NL',
+                ['nldProvince' => ['name' => 'Bavaria']],
+                ['BE:name:Bavaria' => ['found' => true, 'id' => 31, 'name' => 'Bavaria']],
+                ['id' => null, 'name' => 'Bavaria'],
             ],
         ];
     }
@@ -641,6 +722,9 @@ class ApiClientHelperTest extends TestCase
             'service unavailable exception' => [ServiceUnavailableException::class, 500],
             'bad request exception' => [BadRequestException::class, 400],
             'authentication exception' => [AuthenticationException::class, 400],
+            'forbidden exception' => [ForbiddenException::class, 400],
+            'curl exception' => [CurlException::class, 400],
+            'generic exception' => [RuntimeException::class, 400],
         ];
     }
 
@@ -707,7 +791,9 @@ class ApiClientHelperTest extends TestCase
             ['client' => $client]
         );
 
-        $helper->validateAddress('XX', '1234AB');
+        $result = $helper->validateAddress('XX', '1234AB');
+
+        $this->assertSame(['matches' => []], $result);
     }
 
     #[Test]
@@ -721,7 +807,9 @@ class ApiClientHelperTest extends TestCase
 
         $helper = $this->createAvailableHelper([], ['client' => $client]);
 
-        $helper->validateAddress('nld');
+        $result = $helper->validateAddress('nld');
+
+        $this->assertSame(['matches' => []], $result);
     }
 
     #[Test]
@@ -745,7 +833,7 @@ class ApiClientHelperTest extends TestCase
             'client' => $client,
             'addressHelper' => $addressHelper,
             'regionFactory' => $this->createRegionFactory([
-                'name:North Holland' => ['found' => true, 'id' => 11, 'name' => 'North Holland'],
+                'NL:name:North Holland' => ['found' => true, 'id' => 11, 'name' => 'North Holland'],
             ]),
         ]);
 
@@ -944,10 +1032,10 @@ class ApiClientHelperTest extends TestCase
                     return $result;
                 };
                 $region->method('loadByName')->willReturnCallback(
-                    fn (string $name) => $resolve($lookups['name:' . $name] ?? ['found' => false])
+                    fn (string $name, string $country) => $resolve($lookups["$country:name:$name"] ?? ['found' => false])
                 );
                 $region->method('loadByCode')->willReturnCallback(
-                    fn (string $code) => $resolve($lookups['code:' . $code] ?? ['found' => false])
+                    fn (string $code, string $country) => $resolve($lookups["$country:code:$code"] ?? ['found' => false])
                 );
 
                 return $region;

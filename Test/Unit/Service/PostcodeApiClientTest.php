@@ -42,6 +42,40 @@ class PostcodeApiClientTest extends TestCase
     }
 
     #[Test]
+    #[DataProvider('nonArrayJsonProvider')]
+    public function valid_json_that_is_not_an_array_raises_exception(string $body): void
+    {
+        $this->expectException(InvalidJsonResponseException::class);
+
+        $this->createClientWithResponse(200, $body)->accountInfo();
+    }
+
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function nonArrayJsonProvider(): array
+    {
+        return [
+            'string' => ['"hello"'],
+            'integer' => ['42'],
+            'boolean' => ['true'],
+            'null' => ['null'],
+        ];
+    }
+
+    #[Test]
+    public function successful_response_records_success(): void
+    {
+        $monitor = $this->createMock(ApiAvailabilityMonitor::class);
+        $monitor->expects($this->once())->method('recordSuccess');
+        $monitor->expects($this->never())->method('recordFailure');
+
+        $result = $this->createClientWithResponse(200, '{"foo":"bar"}', $monitor)->accountInfo();
+
+        $this->assertSame(['foo' => 'bar'], $result);
+    }
+
+    #[Test]
     public function curl_failure_raises_curl_exception(): void
     {
         $this->expectException(CurlException::class);
@@ -54,48 +88,60 @@ class PostcodeApiClientTest extends TestCase
 
     #[Test]
     #[DataProvider('httpStatusExceptionProvider')]
-    public function non_success_http_status_maps_to_typed_exception(int $statusCode, string $exceptionClass): void
-    {
+    public function non_success_http_status_maps_to_typed_exception(
+        int $statusCode,
+        string $exceptionClass,
+        bool $recordsFailure
+    ): void {
+        $monitor = $this->createMock(ApiAvailabilityMonitor::class);
+        $monitor->expects($recordsFailure ? $this->once() : $this->never())->method('recordFailure');
+        $monitor->expects($this->never())->method('recordSuccess');
+
         $this->expectException($exceptionClass);
 
-        $this->createClientWithResponse($statusCode)->accountInfo();
+        $this->createClientWithResponse($statusCode, '{}', $monitor)->accountInfo();
     }
 
     /**
-     * @return array<string, array{int, class-string<\Throwable>}>
+     * @return array<string, array{int, class-string<\Throwable>, bool}>
      */
     public static function httpStatusExceptionProvider(): array
     {
         return [
-            '400' => [400, BadRequestException::class],
-            '401' => [401, AuthenticationException::class],
-            '403' => [403, ForbiddenException::class],
-            '404' => [404, NotFoundException::class],
-            '429' => [429, TooManyRequestsException::class],
-            '503' => [503, ServiceUnavailableException::class],
-            '500' => [500, UnexpectedException::class],
+            '400' => [400, BadRequestException::class, false],
+            '401' => [401, AuthenticationException::class, false],
+            '403' => [403, ForbiddenException::class, false],
+            '404' => [404, NotFoundException::class, false],
+            '429' => [429, TooManyRequestsException::class, false],
+            '503' => [503, ServiceUnavailableException::class, true],
+            '500' => [500, UnexpectedException::class, true],
         ];
     }
 
     /**
      * @param int $statusCode
      * @param string $body
+     * @param ApiAvailabilityMonitor|null $monitor
      * @return PostcodeApiClient
      */
-    private function createClientWithResponse(int $statusCode, string $body = '{}'): PostcodeApiClient
-    {
+    private function createClientWithResponse(
+        int $statusCode,
+        string $body = '{}',
+        ?ApiAvailabilityMonitor $monitor = null
+    ): PostcodeApiClient {
         $curl = $this->createStub(Curl::class);
         $curl->method('getStatus')->willReturn($statusCode);
         $curl->method('getBody')->willReturn($body);
 
-        return $this->createClient($curl);
+        return $this->createClient($curl, $monitor);
     }
 
     /**
      * @param Curl $curl
+     * @param ApiAvailabilityMonitor|null $monitor
      * @return PostcodeApiClient
      */
-    private function createClient(Curl $curl): PostcodeApiClient
+    private function createClient(Curl $curl, ?ApiAvailabilityMonitor $monitor = null): PostcodeApiClient
     {
         $storeConfigHelper = $this->createStub(StoreConfigHelper::class);
         $storeConfigHelper->method('getCurrentStoreBaseUrl')->willReturn('https://example.com/');
@@ -111,7 +157,7 @@ class PostcodeApiClientTest extends TestCase
             $curl,
             $productMetadata,
             $storeConfigHelper,
-            $this->createStub(ApiAvailabilityMonitor::class)
+            $monitor ?? $this->createStub(ApiAvailabilityMonitor::class)
         );
     }
 }
