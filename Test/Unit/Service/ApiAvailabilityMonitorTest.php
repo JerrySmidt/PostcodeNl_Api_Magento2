@@ -106,6 +106,41 @@ class ApiAvailabilityMonitorTest extends TestCase
     }
 
     #[Test]
+    public function failure_during_outage_does_not_retrip_or_extend_cooldown(): void
+    {
+        $cache = $this->createMock(CacheInterface::class);
+        $cache->method('load')->willReturn(json_encode([
+            'failure_times' => [],
+            'unavailable_since' => time() - 1,
+            'trip_count' => 2,
+            'half_open' => false,
+        ]));
+        $cache->expects($this->never())->method('save');
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects($this->never())->method('warning');
+        $logger->expects($this->never())->method('notice');
+        $monitor = $this->createMonitor(['api_cooldown_seconds' => '300'], $cache, $logger);
+
+        $monitor->recordFailure();
+
+        $this->assertFalse($monitor->isAvailable());
+    }
+
+    #[Test]
+    public function cooldown_boundary_half_opens_when_elapsed_equals_cooldown(): void
+    {
+        $cache = $this->createCacheWithState([
+            'failure_times' => [],
+            'unavailable_since' => time() - 1,
+            'trip_count' => 1,
+            'half_open' => false,
+        ]);
+        $monitor = $this->createMonitor(['api_cooldown_seconds' => '1'], $cache);
+
+        $this->assertTrue($monitor->isAvailable());
+    }
+
+    #[Test]
     public function success_while_half_open_closes_circuit_and_resets_trip_count(): void
     {
         $cache = $this->createCapturingCache(json_encode([
@@ -247,6 +282,35 @@ class ApiAvailabilityMonitorTest extends TestCase
     }
 
     #[Test]
+    #[DataProvider('throwingCooldownProvider')]
+    public function throwing_cooldown_config_uses_default(int $elapsed, bool $expectedAvailable): void
+    {
+        $cache = $this->createCacheWithState([
+            'failure_times' => [],
+            'unavailable_since' => time() - $elapsed,
+            'trip_count' => 1,
+            'half_open' => false,
+        ]);
+        $monitor = $this->createMonitor(
+            ['api_cooldown_seconds' => new \RuntimeException('config down')],
+            $cache
+        );
+
+        $this->assertSame($expectedAvailable, $monitor->isAvailable());
+    }
+
+    /**
+     * @return array<string, array{int, bool}>
+     */
+    public static function throwingCooldownProvider(): array
+    {
+        return [
+            'below default stays tripped' => [10, false],
+            'above default half-opens' => [100, true],
+        ];
+    }
+
+    #[Test]
     #[DataProvider('failureWindowConfigProvider')]
     public function failure_window_config_controls_pruning(?string $configValue, bool $expectedAvailable): void
     {
@@ -283,6 +347,26 @@ class ApiAvailabilityMonitorTest extends TestCase
     }
 
     #[Test]
+    public function throwing_failure_window_config_falls_back_to_default(): void
+    {
+        $oldFailure = time() - 100;
+        $cache = $this->createCacheWithState([
+            'failure_times' => [$oldFailure, $oldFailure],
+            'unavailable_since' => null,
+            'trip_count' => 0,
+            'half_open' => false,
+        ]);
+        $monitor = $this->createMonitor([
+            'api_max_failures' => '3',
+            'api_failure_window_seconds' => new \RuntimeException('config down'),
+        ], $cache);
+
+        $monitor->recordFailure();
+
+        $this->assertFalse($monitor->isAvailable());
+    }
+
+    #[Test]
     public function cache_miss_uses_default_state(): void
     {
         $cache = $this->createStub(CacheInterface::class);
@@ -299,6 +383,30 @@ class ApiAvailabilityMonitorTest extends TestCase
         $monitor = $this->createMonitor([], $cache);
 
         $this->assertTrue($monitor->isAvailable());
+    }
+
+    #[Test]
+    #[DataProvider('nonStringCachePayloadProvider')]
+    public function non_string_cache_payload_uses_default_state(mixed $payload): void
+    {
+        $cache = $this->createStub(CacheInterface::class);
+        $cache->method('load')->willReturn($payload);
+        $monitor = $this->createMonitor([], $cache);
+
+        $this->assertTrue($monitor->isAvailable());
+    }
+
+    /**
+     * @return array<string, array{mixed}>
+     */
+    public static function nonStringCachePayloadProvider(): array
+    {
+        return [
+            'integer' => [1],
+            'zero' => [0],
+            'true' => [true],
+            'empty array' => [[]],
+        ];
     }
 
     #[Test]
@@ -353,6 +461,18 @@ class ApiAvailabilityMonitorTest extends TestCase
                 'half_open' => 'yes',
             ]],
         ];
+    }
+
+    #[Test]
+    public function partial_cache_payload_is_accepted_as_valid_state(): void
+    {
+        // Pins source issue: _isValidState validates via ?? defaults, so a payload missing
+        // trip_count/half_open is accepted; _loadState reads those keys directly once tripped.
+        // Update when decoded state is merged over the default state.
+        $cache = $this->createCacheWithPayload('{"failure_times":[],"unavailable_since":null}');
+        $monitor = $this->createMonitor([], $cache);
+
+        $this->assertTrue($monitor->isAvailable());
     }
 
     #[Test]
