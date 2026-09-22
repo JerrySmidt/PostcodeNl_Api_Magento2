@@ -48,8 +48,11 @@ class CsrfValidatorTest extends TestCase
     }
 
     #[Test]
-    public function frontend_non_ajax_request_throws(): void
+    public function non_ajax_request_is_rejected_even_with_valid_form_key(): void
     {
+        $formKeyValidator = $this->createStub(FormKeyValidator::class);
+        $formKeyValidator->method('validate')->willReturn(true);
+
         $appState = $this->createStub(State::class);
         $appState->method('getAreaCode')->willReturn(Area::AREA_FRONTEND);
 
@@ -59,7 +62,7 @@ class CsrfValidatorTest extends TestCase
         $this->expectException(LocalizedException::class);
         $this->expectExceptionMessage('Invalid request');
 
-        $this->createValidator($this->createStub(FormKeyValidator::class), $request, $appState)->validate();
+        $this->createValidator($formKeyValidator, $request, $appState)->validate();
     }
 
     #[Test]
