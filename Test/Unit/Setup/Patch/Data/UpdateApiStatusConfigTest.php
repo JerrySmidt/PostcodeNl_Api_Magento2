@@ -131,6 +131,7 @@ class UpdateApiStatusConfigTest extends TestCase
         $client->expects($this->once())
             ->method('accountInfo')
             ->willReturn(['name' => 'Postcode.eu', 'hasAccess' => false]);
+        $client->expects($this->once())->method('setCredentials')->with('key', 'secret');
         $client->expects($this->never())->method('internationalGetSupportedCountries');
 
         $apiClientHelper = $this->createMock(ApiClientHelper::class);
@@ -168,6 +169,7 @@ class UpdateApiStatusConfigTest extends TestCase
         $client->expects($this->once())
             ->method('accountInfo')
             ->willThrowException(new AuthenticationException('Invalid credentials'));
+        $client->expects($this->once())->method('setCredentials')->with('key', 'secret');
 
         $apiClientHelper = $this->createMock(ApiClientHelper::class);
         $apiClientHelper->expects($this->once())->method('getApiClient')->willReturn($client);
@@ -268,6 +270,45 @@ class UpdateApiStatusConfigTest extends TestCase
             [StoreConfigHelper::PATH['account_status'], ApiClientHelper::API_ACCOUNT_STATUS_INACTIVE, 'default', 0],
             [StoreConfigHelper::PATH['account_name'], 'Postcode.eu', 'websites', 2],
             [StoreConfigHelper::PATH['account_status'], ApiClientHelper::API_ACCOUNT_STATUS_INACTIVE, 'websites', 2],
+        ], $saved);
+    }
+
+    #[Test]
+    public function incomplete_scope_does_not_block_complete_scope(): void
+    {
+        $saved = [];
+
+        $rows = array_merge(
+            [['scope' => 'default', 'scope_id' => 0, 'path' => StoreConfigHelper::PATH['api_key'], 'value' => 'key']],
+            self::credentialRows('stores', 5)
+        );
+
+        $connection = $this->createConnection($rows);
+        $connection->expects($this->once())->method('fetchOne')->willReturn(false);
+
+        $client = $this->createStub(PostcodeApiClient::class);
+        $client->method('accountInfo')->willReturn(['name' => 'Postcode.eu', 'hasAccess' => false]);
+
+        $apiClientHelper = $this->createStub(ApiClientHelper::class);
+        $apiClientHelper->method('getApiClient')->willReturn($client);
+
+        $resourceConfig = $this->createMock(Config::class);
+        $resourceConfig->expects($this->exactly(2))
+            ->method('saveConfig')
+            ->willReturnCallback(
+                function (string $path, string $value, string $scope, int $scopeId) use (&$saved): void {
+                    $saved[] = [$path, $value, $scope, $scopeId];
+                }
+            );
+        $resourceConfig->expects($this->exactly(3))->method('deleteConfig');
+
+        $patch = $this->createPatch($connection, $apiClientHelper, $resourceConfig);
+
+        $patch->apply();
+
+        $this->assertSame([
+            [StoreConfigHelper::PATH['account_name'], 'Postcode.eu', 'stores', 5],
+            [StoreConfigHelper::PATH['account_status'], ApiClientHelper::API_ACCOUNT_STATUS_INACTIVE, 'stores', 5],
         ], $saved);
     }
 

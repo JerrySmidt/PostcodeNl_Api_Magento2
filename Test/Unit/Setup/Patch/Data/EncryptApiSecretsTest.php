@@ -114,6 +114,31 @@ class EncryptApiSecretsTest extends TestCase
         ], $saved);
     }
 
+    #[Test]
+    public function skipped_rows_do_not_stop_later_plain_rows(): void
+    {
+        $path = StoreConfigHelper::PATH['api_secret'];
+
+        $encryptor = $this->createMock(EncryptorInterface::class);
+        $encryptor->expects($this->once())
+            ->method('encrypt')
+            ->with('plain-secret')
+            ->willReturn('0:encrypted');
+
+        $resourceConfig = $this->createMock(Config::class);
+        $resourceConfig->expects($this->once())
+            ->method('saveConfig')
+            ->with($path, '0:encrypted', 'stores', 5);
+
+        $patch = $this->createPatch($resourceConfig, $encryptor, [
+            ['scope' => 'default', 'scope_id' => 0, 'path' => $path, 'value' => ''],
+            ['scope' => 'websites', 'scope_id' => 2, 'path' => $path, 'value' => '0:already-encrypted'],
+            ['scope' => 'stores', 'scope_id' => 5, 'path' => $path, 'value' => 'plain-secret'],
+        ]);
+
+        $patch->apply();
+    }
+
     /**
      * @param array<int, array<string, mixed>> $rows
      */

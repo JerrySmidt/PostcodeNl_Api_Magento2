@@ -37,8 +37,12 @@ class UpdateNotifierTest extends TestCase
         $notifier->expects($this->once())
             ->method('addNotice')
             ->with(
-                $this->isInstanceOf(Phrase::class),
-                $this->isInstanceOf(Phrase::class),
+                $this->callback(
+                    fn (Phrase $phrase): bool => $phrase->getText() === 'Postcode.eu Address Validation update available'
+                ),
+                $this->callback(
+                    fn (Phrase $phrase): bool => str_contains($phrase->getText(), 'Get the newest features and improvements')
+                ),
                 Data::MODULE_RELEASE_URL
             );
 

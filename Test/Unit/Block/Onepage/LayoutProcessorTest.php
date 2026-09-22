@@ -109,11 +109,32 @@ class LayoutProcessorTest extends TestCase
 
         foreach ([self::PAYMENTS_FIELDS, self::SHARED_FIELDS, self::MAGEPLAZA_FIELDS] as $path) {
             $fields = $this->valueAt($result, $path);
+
             foreach ($this->autofillFieldNames() as $name) {
-                $this->assertArrayHasKey($name, $fields);
+                $this->assertNotEmpty($fields[$name]);
             }
+
             $this->assertArrayHasKey('firstname', $fields);
+            $this->assertSame('kept', $fields['address_autofill_bypass']['config']['someOption']);
+            $this->assertSame(
+                'kept',
+                $fields['address_autofill_formatted_output']['children']['plain_field']['config']['someOption']
+            );
+            $this->assertArrayNotHasKey('street', $fields);
+            $this->assertArrayNotHasKey('postcode', $fields);
         }
+    }
+
+    #[Test]
+    public function data_scope_leaves_fields_without_data_scope_untouched(): void
+    {
+        $processor = $this->createProcessor($this->createStoreConfigStub());
+
+        $result = $processor->process($this->createLayout());
+        $fields = $this->valueAt($result, self::PAYMENTS_FIELDS);
+
+        $this->assertSame(['someOption' => 'kept'], $fields['plain_no_scope']['config']);
+        $this->assertArrayNotHasKey('dataScope', $fields['plain_no_scope']);
     }
 
     #[Test]
@@ -345,6 +366,7 @@ class LayoutProcessorTest extends TestCase
                 'dataScope' => 'shippingAddress.firstname',
                 'children' => ['nested' => ['dataScope' => 'shippingAddress.nested']],
             ],
+            "$billingForm.plain_no_scope" => ['config' => ['someOption' => 'kept']],
             "$payments.checkmo.children.form-fields.children.ignored" => ['dataScope' => 'shippingAddress.ignored'],
             "$payments.free-form.dataScopePrefix" => 'billingAddress',
             "$sharedForm.firstname" => [

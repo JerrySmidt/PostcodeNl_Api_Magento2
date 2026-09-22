@@ -157,6 +157,61 @@ class UpdateNotificationRepositoryTest extends TestCase
     }
 
     #[Test]
+    public function stored_version_with_notified_false_reports_not_notified(): void
+    {
+        $notification = $this->createStub(UpdateNotification::class);
+        $notification->method('getId')->willReturn(7);
+        $notification->method('getNotified')->willReturn(false);
+
+        $factory = $this->createStub(UpdateNotificationFactory::class);
+        $factory->method('create')->willReturn($notification);
+
+        $repository = new UpdateNotificationRepository(
+            $this->createStub(UpdateNotificationResource::class),
+            $factory
+        );
+
+        $this->assertFalse($repository->isVersionNotified('1.3.0'));
+    }
+
+    #[Test]
+    public function version_lookup_loads_by_version_field(): void
+    {
+        $notification = $this->createStub(UpdateNotification::class);
+        $notification->method('getId')->willReturn(7);
+
+        $factory = $this->createStub(UpdateNotificationFactory::class);
+        $factory->method('create')->willReturn($notification);
+
+        $resource = $this->createMock(UpdateNotificationResource::class);
+        $resource->expects($this->once())->method('load')->with($notification, '1.3.0', 'version');
+
+        $repository = new UpdateNotificationRepository($resource, $factory);
+
+        $this->assertSame($notification, $repository->getByVersion('1.3.0'));
+    }
+
+    #[Test]
+    public function set_version_notified_does_not_wrap_resource_failure(): void
+    {
+        // Pins source issue: setVersionNotified() calls the resource directly, bypassing the CouldNotSaveException wrap in save().
+        $missing = $this->createNotification();
+        $created = $this->createNotification();
+
+        $factory = $this->createStub(UpdateNotificationFactory::class);
+        $factory->method('create')->willReturnOnConsecutiveCalls($missing, $created);
+
+        $resource = $this->createStub(UpdateNotificationResource::class);
+        $resource->method('save')->willThrowException(new \RuntimeException('deadlock'));
+
+        $repository = new UpdateNotificationRepository($resource, $factory);
+
+        $this->expectException(\RuntimeException::class);
+
+        $repository->setVersionNotified('1.3.0');
+    }
+
+    #[Test]
     public function resource_save_failure_raises_could_not_save(): void
     {
         $notification = $this->createStub(UpdateNotification::class);
