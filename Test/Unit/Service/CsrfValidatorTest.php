@@ -42,6 +42,7 @@ class CsrfValidatorTest extends TestCase
         $request->method('isAjax')->willReturn(false);
 
         $this->expectException(LocalizedException::class);
+        $this->expectExceptionMessage('Invalid request');
 
         $this->createValidator($this->createStub(FormKeyValidator::class), $request, $appState)->validate();
     }
@@ -56,6 +57,7 @@ class CsrfValidatorTest extends TestCase
         $request->method('isAjax')->willReturn(false);
 
         $this->expectException(LocalizedException::class);
+        $this->expectExceptionMessage('Invalid request');
 
         $this->createValidator($this->createStub(FormKeyValidator::class), $request, $appState)->validate();
     }
@@ -73,6 +75,7 @@ class CsrfValidatorTest extends TestCase
         $formKeyValidator->method('validate')->willReturn(false);
 
         $this->expectException(LocalizedException::class);
+        $this->expectExceptionMessage('Invalid request');
 
         $this->createValidator($formKeyValidator, $request, $appState)->validate();
     }

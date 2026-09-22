@@ -22,29 +22,44 @@ class PostcodeModelTest extends TestCase
 
     #[Test]
     #[DataProvider('requestEntryProvider')]
-    public function csrf_validation_runs_before_delegation(string $method, array $args): void
-    {
-        $csrfValidator = $this->createMock(CsrfValidator::class);
-        $csrfValidator->expects($this->once())->method('validate');
+    public function csrf_validation_runs_before_delegation(
+        string $method,
+        array $args,
+        string $helperMethod
+    ): void {
+        $csrfValidator = $this->createStub(CsrfValidator::class);
+        $csrfValidator->method('validate')
+            ->willThrowException(new LocalizedException(new Phrase('Invalid request')));
 
-        $model = new PostcodeModel($this->createStub(ApiClientHelper::class), $csrfValidator);
+        $helper = $this->createMock(ApiClientHelper::class);
+        $helper->expects($this->never())->method($helperMethod);
+
+        $model = new PostcodeModel($helper, $csrfValidator);
+
+        $this->expectException(WebapiException::class);
 
         $model->$method(...$args);
-
-        $this->addToAssertionCount(1);
     }
 
     /**
-     * @return array<string, array{string, array}>
+     * @return array<string, array{string, array, string}>
      */
     public static function requestEntryProvider(): array
     {
         return [
-            'autocomplete' => ['getAddressAutocomplete', ['nld', 'Damrak']],
-            'details' => ['getAddressDetails', [self::ADDRESS_CONTEXT]],
-            'details country' => ['getAddressDetailsCountry', [self::ADDRESS_CONTEXT, 'NLD']],
-            'nl address' => ['getNlAddress', ['2012ES', '30']],
-            'validate address' => ['validateAddress', ['NL', '1011 AB', 'Amsterdam', 'Damrak', '1']],
+            'autocomplete' => ['getAddressAutocomplete', ['nld', 'Damrak'], 'getAddressAutocomplete'],
+            'details' => ['getAddressDetails', [self::ADDRESS_CONTEXT], 'getAddressDetails'],
+            'details country' => [
+                'getAddressDetailsCountry',
+                [self::ADDRESS_CONTEXT, 'NLD'],
+                'getAddressDetails',
+            ],
+            'nl address' => ['getNlAddress', ['2012ES', '30'], 'getNlAddress'],
+            'validate address' => [
+                'validateAddress',
+                ['NL', '1011 AB', 'Amsterdam', 'Damrak', '1'],
+                'validateAddress',
+            ],
         ];
     }
 
