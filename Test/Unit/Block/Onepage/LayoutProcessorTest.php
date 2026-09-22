@@ -197,7 +197,7 @@ class LayoutProcessorTest extends TestCase
     #[Test]
     public function missing_shipping_path_raises_localized_exception(): void
     {
-        $processor = $this->createProcessor($this->createStoreConfigStub());
+        $processor = $this->createProcessor($this->createStub(StoreConfigHelper::class));
         $layout = $this->nest([
             'components.checkout.children.steps.children' => [],
         ]);
@@ -246,8 +246,11 @@ class LayoutProcessorTest extends TestCase
         bool $changeFieldsPosition = true,
         array $jsInit = ['enabled' => true]
     ): StoreConfigHelper {
-        $storeConfigHelper = $this->createStub(StoreConfigHelper::class);
-        $storeConfigHelper->method('isSetFlag')->willReturn($changeFieldsPosition);
+        $storeConfigHelper = $this->createMock(StoreConfigHelper::class);
+        $storeConfigHelper->expects($this->atLeastOnce())
+            ->method('isSetFlag')
+            ->with('change_fields_position')
+            ->willReturn($changeFieldsPosition);
         $storeConfigHelper->method('getJsinit')->willReturn($jsInit);
 
         return $storeConfigHelper;

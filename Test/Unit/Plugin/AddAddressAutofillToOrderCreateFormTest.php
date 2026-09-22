@@ -10,6 +10,7 @@ use Magento\Framework\TestFramework\Unit\Helper\MockCreationTrait;
 use Magento\Sales\Block\Adminhtml\Order\Address\Form as EditForm;
 use Magento\Sales\Block\Adminhtml\Order\Create\Form\Address as AddressBlock;
 use Magento\Sales\Model\Order\Address;
+use PHPUnit\Framework\Attributes\AllowMockObjectsWithoutExpectations;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
@@ -22,6 +23,9 @@ use PostcodeEu\AddressValidation\Plugin\AddAddressAutofillToOrderCreateForm;
 /**
  * Address autofill field injection on the admin order create form.
  */
+// Subjects are partial mocks of concrete Magento classes (getStoreId/getIsShipping/getAddress
+// stubbed only), so there are no expectations to verify; a plain stub cannot partially stub a class.
+#[AllowMockObjectsWithoutExpectations]
 class AddAddressAutofillToOrderCreateFormTest extends TestCase
 {
     use MockCreationTrait;
@@ -83,7 +87,7 @@ class AddAddressAutofillToOrderCreateFormTest extends TestCase
     public function edit_form_returns_original_form(): void
     {
         $subject = $this->createPartialMockWithReflection(EditForm::class, ['getStoreId']);
-        $subject->expects($this->once())->method('getStoreId')->willReturn(self::STORE_ID);
+        $subject->method('getStoreId')->willReturn(self::STORE_ID);
         $fieldset = $this->createNeverAddingFieldset();
         $form = $this->createForm($fieldset);
         $dataHelper = $this->createStub(DataHelper::class);
@@ -266,7 +270,7 @@ class AddAddressAutofillToOrderCreateFormTest extends TestCase
     private function createEarlySubject(): AddressBlock
     {
         $subject = $this->createPartialMockWithReflection(AddressBlock::class, ['getStoreId']);
-        $subject->expects($this->once())->method('getStoreId')->willReturn(self::STORE_ID);
+        $subject->method('getStoreId')->willReturn(self::STORE_ID);
 
         return $subject;
     }
@@ -280,9 +284,9 @@ class AddAddressAutofillToOrderCreateFormTest extends TestCase
             AddressBlock::class,
             ['getStoreId', 'getIsShipping', 'getAddress']
         );
-        $subject->expects($this->once())->method('getStoreId')->willReturn(self::STORE_ID);
-        $subject->expects($this->once())->method('getIsShipping')->willReturn($isShipping);
-        $subject->expects($this->once())->method('getAddress')->willReturn($address);
+        $subject->method('getStoreId')->willReturn(self::STORE_ID);
+        $subject->method('getIsShipping')->willReturn($isShipping);
+        $subject->method('getAddress')->willReturn($address);
 
         return $subject;
     }
@@ -306,7 +310,7 @@ class AddAddressAutofillToOrderCreateFormTest extends TestCase
                     ? $fieldset
                     : $existingElement
             );
-        $form->expects($this->any())->method('getHtmlIdPrefix')->willReturn(self::HTML_ID_PREFIX);
+        $form->method('getHtmlIdPrefix')->willReturn(self::HTML_ID_PREFIX);
 
         return $form;
     }
@@ -318,10 +322,17 @@ class AddAddressAutofillToOrderCreateFormTest extends TestCase
         array $settings = [],
         string $defaultCountry = 'NL'
     ): AddAddressAutofillToOrderCreateForm {
-        $storeConfigHelper = $this->createStub(StoreConfigHelper::class);
-        $storeConfigHelper->method('getValue')->willReturn($behavior);
-        $storeConfigHelper->method('getEnabledCountries')->willReturn($enabledCountries);
-        $storeConfigHelper->method('getJsinit')->willReturn($settings);
+        $storeConfigHelper = $this->createMock(StoreConfigHelper::class);
+        $storeConfigHelper->expects($this->once())
+            ->method('getValue')
+            ->with('admin_address_autocomplete_behavior', self::STORE_ID)
+            ->willReturn($behavior);
+        $storeConfigHelper->method('getEnabledCountries')->willReturnCallback(
+            fn (int $storeId) => $storeId === self::STORE_ID ? $enabledCountries : []
+        );
+        $storeConfigHelper->method('getJsinit')->willReturnCallback(
+            fn (int $storeId) => $storeId === self::STORE_ID ? $settings : []
+        );
 
         $directoryHelper = $this->createStub(DirectoryHelper::class);
         $directoryHelper->method('getDefaultCountry')->willReturn($defaultCountry);

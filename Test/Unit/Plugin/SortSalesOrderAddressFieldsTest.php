@@ -128,8 +128,11 @@ class SortSalesOrderAddressFieldsTest extends TestCase
         $request = $this->createStub(Http::class);
         $request->method('getFullActionName')->willReturn($actionName);
 
-        $storeConfigHelper = $this->createStub(StoreConfigHelper::class);
-        $storeConfigHelper->method('isSetFlag')->willReturn($flag);
+        $storeConfigHelper = $this->createMock(StoreConfigHelper::class);
+        $storeConfigHelper->expects($this->once())
+            ->method('isSetFlag')
+            ->with('change_fields_position')
+            ->willReturn($flag);
 
         return new SortSalesOrderAddressFields($request, $storeConfigHelper);
     }

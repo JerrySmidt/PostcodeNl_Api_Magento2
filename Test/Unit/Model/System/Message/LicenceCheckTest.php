@@ -80,7 +80,9 @@ class LicenceCheckTest extends TestCase
     private function createMessage(array $config = []): LicenceCheck
     {
         $storeConfigHelper = $this->createStub(StoreConfigHelper::class);
-        $storeConfigHelper->method('getValue')->willReturn($config['account_status'] ?? null);
+        $storeConfigHelper->method('getValue')->willReturnCallback(
+            fn (string $path) => $path === 'account_status' ? ($config['account_status'] ?? null) : null
+        );
 
         return new LicenceCheck($storeConfigHelper, $this->createStub(UrlInterface::class));
     }
