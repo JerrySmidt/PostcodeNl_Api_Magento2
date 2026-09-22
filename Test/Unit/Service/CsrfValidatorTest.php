@@ -89,12 +89,13 @@ class CsrfValidatorTest extends TestCase
         $request = $this->createStub(HttpRequest::class);
         $request->method('isAjax')->willReturn(true);
 
-        $formKeyValidator = $this->createStub(FormKeyValidator::class);
-        $formKeyValidator->method('validate')->willReturn(true);
+        $formKeyValidator = $this->createMock(FormKeyValidator::class);
+        $formKeyValidator->expects($this->once())
+            ->method('validate')
+            ->with($request)
+            ->willReturn(true);
 
         $this->createValidator($formKeyValidator, $request, $appState)->validate();
-
-        $this->addToAssertionCount(1);
     }
 
     /**

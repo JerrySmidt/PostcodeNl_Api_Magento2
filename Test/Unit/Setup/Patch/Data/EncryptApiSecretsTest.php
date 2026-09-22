@@ -35,8 +35,6 @@ class EncryptApiSecretsTest extends TestCase
         ]);
 
         $patch->apply();
-
-        $this->addToAssertionCount(1);
     }
 
     #[Test]
@@ -58,8 +56,6 @@ class EncryptApiSecretsTest extends TestCase
         ]);
 
         $patch->apply();
-
-        $this->addToAssertionCount(1);
     }
 
     #[Test]
@@ -83,8 +79,6 @@ class EncryptApiSecretsTest extends TestCase
         ]);
 
         $patch->apply();
-
-        $this->addToAssertionCount(1);
     }
 
     #[Test]

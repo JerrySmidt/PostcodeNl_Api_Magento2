@@ -242,8 +242,6 @@ class StatusTest extends TestCase
         ]);
 
         $block->render($this->createStub(AbstractElement::class));
-
-        $this->addToAssertionCount(1);
     }
 
     /**
@@ -341,8 +339,6 @@ class StatusTest extends TestCase
         );
 
         $block->render($this->createStub(AbstractElement::class));
-
-        $this->addToAssertionCount(1);
     }
 
     #[Test]
@@ -358,8 +354,6 @@ class StatusTest extends TestCase
         );
 
         $block->render($this->createStub(AbstractElement::class));
-
-        $this->addToAssertionCount(1);
     }
 
     /**

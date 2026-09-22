@@ -37,8 +37,6 @@ class UpdateApiStatusConfigTest extends TestCase
         $patch = $this->createPatch($connection, $apiClientHelper, $resourceConfig);
 
         $patch->apply();
-
-        $this->addToAssertionCount(1);
     }
 
     /**
@@ -78,8 +76,6 @@ class UpdateApiStatusConfigTest extends TestCase
         $patch = $this->createPatch($connection, $apiClientHelper, $resourceConfig);
 
         $patch->apply();
-
-        $this->addToAssertionCount(1);
     }
 
     #[Test]
