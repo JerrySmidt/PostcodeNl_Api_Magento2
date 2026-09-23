@@ -3,7 +3,7 @@
 namespace PostcodeEu\AddressValidation\Plugin;
 
 use Magento\Customer\Model\Metadata\Form;
-use Magento\Framework\App\RequestInterface;
+use Magento\Framework\App\Request\Http;
 use PostcodeEu\AddressValidation\Helper\StoreConfigHelper;
 
 class SortSalesOrderAddressFields
@@ -14,16 +14,16 @@ class SortSalesOrderAddressFields
     private $_storeConfigHelper;
 
     /**
-     * @var RequestInterface
+     * @var Http
      */
     private $_request;
 
     /**
-     * @param RequestInterface $request
+     * @param Http $request
      * @param StoreConfigHelper $storeConfigHelper
      */
     public function __construct(
-        RequestInterface $request,
+        Http $request,
         StoreConfigHelper $storeConfigHelper
     ) {
         $this->_request = $request;
