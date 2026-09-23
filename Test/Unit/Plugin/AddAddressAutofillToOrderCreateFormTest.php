@@ -204,7 +204,9 @@ class AddAddressAutofillToOrderCreateFormTest extends TestCase
             'default forwards helper disabled' => [AdminAddressAutocompleteBehavior::DEFAULT, false, false],
             'default forwards helper enabled' => [AdminAddressAutocompleteBehavior::DEFAULT, true, true],
             'single input forces disabled' => [AdminAddressAutocompleteBehavior::SINGLE_INPUT, false, true],
-            'dutch_lookup leaves nl component enabled' => [AdminAddressAutocompleteBehavior::DUTCH_LOOKUP, true, false],
+            'dutch lookup leaves nl component enabled' => [AdminAddressAutocompleteBehavior::DUTCH_LOOKUP, true, false],
+            'unknown behavior falls back to helper enabled' => ['unexpected', true, true],
+            'unknown behavior falls back to helper disabled' => ['unexpected', false, false],
         ];
     }
 

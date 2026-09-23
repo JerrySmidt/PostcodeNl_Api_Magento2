@@ -40,15 +40,22 @@ class SortSalesOrderAddressFields
     public function afterGetAttributes(Form $subject, array $result)
     {
         if ($this->_storeConfigHelper->isSetFlag('change_fields_position')
-            && isset($result['country_id'])
             && strpos($this->_request->getFullActionName(), 'sales_order_create') !== false
         ) {
-            $result['country_id']->setSortOrder(70);
-            $result['street']->setSortOrder(80);
-            $result['postcode']->setSortOrder(90);
-            $result['city']->setSortOrder(100);
-            $result['region']->setSortOrder(110);
-            $result['region_id']->setSortOrder(110);
+            $sortOrders = [
+                'country_id' => 70,
+                'street' => 80,
+                'postcode' => 90,
+                'city' => 100,
+                'region' => 110,
+                'region_id' => 110,
+            ];
+
+            foreach ($sortOrders as $code => $sortOrder) {
+                if (isset($result[$code])) {
+                    $result[$code]->setSortOrder($sortOrder);
+                }
+            }
         }
 
         return $result;

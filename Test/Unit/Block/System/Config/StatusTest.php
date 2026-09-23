@@ -297,6 +297,39 @@ class StatusTest extends TestCase
     }
 
     #[Test]
+    #[DataProvider('malformedCachedDataProvider')]
+    public function malformed_cache_hit_degrades_to_empty_info(mixed $cachedData): void
+    {
+        $cache = $this->createStub(CacheInterface::class);
+        $cache->method('load')->willReturn('cached-payload');
+
+        $serializer = $this->createStub(SerializerInterface::class);
+        $serializer->method('unserialize')->willReturn($cachedData);
+
+        $block = $this->createRenderingBlock([
+            'cacheFrontendPool' => $this->createCachePool($cache),
+            'serializer' => $serializer,
+        ]);
+
+        $block->render($this->createStub(AbstractElement::class));
+
+        $this->assertSame([], $block->getAccountInfo());
+        $this->assertSame([], $block->getModuleInfo());
+    }
+
+    /**
+     * @return array<string, array{mixed}>
+     */
+    public static function malformedCachedDataProvider(): array
+    {
+        return [
+            'scalar payload' => ['not-an-array'],
+            'missing keys' => [['unexpected' => true]],
+            'wrong key types' => [['accountInfo' => 'nope', 'moduleInfo' => 42]],
+        ];
+    }
+
+    #[Test]
     #[DataProvider('inactiveStatusProvider')]
     public function account_info_left_empty_unless_status_active(?string $status): void
     {
@@ -364,6 +397,7 @@ class StatusTest extends TestCase
         return [
             'update flag false' => [['has_update' => false, 'latest_version' => '1.2.3']],
             'update flag absent' => [['version' => '1.2.3']],
+            'update flag true without latest version' => [['has_update' => true]],
         ];
     }
 

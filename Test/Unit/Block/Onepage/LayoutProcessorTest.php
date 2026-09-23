@@ -187,6 +187,18 @@ class LayoutProcessorTest extends TestCase
     }
 
     #[Test]
+    public function billing_form_without_data_scope_prefix_is_left_without_autofill(): void
+    {
+        $processor = $this->createProcessor($this->createStoreConfigStub());
+
+        $result = $processor->process($this->createLayout());
+        $fields = $this->valueAt($result, self::PAYMENTS_LIST . '.noprefix-form.children.form-fields.children');
+
+        $this->assertArrayHasKey('firstname', $fields);
+        $this->assertArrayNotHasKey('address_autofill_nl', $fields);
+    }
+
+    #[Test]
     public function non_form_entries_and_forms_without_fields_skipped(): void
     {
         $processor = $this->createProcessor($this->createStoreConfigStub());
@@ -362,6 +374,7 @@ class LayoutProcessorTest extends TestCase
                 'children' => ['nested' => ['dataScope' => 'shippingAddress.nested']],
             ],
             "$payments.billing-address-form.dataScopePrefix" => 'billingAddress',
+            "$payments.noprefix-form.children.form-fields.children.firstname" => ['dataScope' => 'shippingAddress.firstname'],
             "$billingForm.firstname" => [
                 'dataScope' => 'shippingAddress.firstname',
                 'children' => ['nested' => ['dataScope' => 'shippingAddress.nested']],

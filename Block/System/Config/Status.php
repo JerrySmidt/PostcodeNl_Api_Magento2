@@ -43,11 +43,6 @@ class Status extends Template implements RendererInterface
     /** @var array|null */
     private $_cachedData;
 
-    /** @var array */
-    public array $accountInfo;
-    /** @var array */
-    public array $moduleInfo;
-
     /**
      * @param Template\Context $context
      * @param StoreConfigHelper $storeConfigHelper
@@ -226,7 +221,16 @@ class Status extends Template implements RendererInterface
             return $data;
         }
 
-        return $this->_serializer->unserialize($cachedData);
+        $data = $this->_serializer->unserialize($cachedData);
+
+        if (!is_array($data)) {
+            return [];
+        }
+
+        return [
+            'accountInfo' => is_array($data['accountInfo'] ?? null) ? $data['accountInfo'] : [],
+            'moduleInfo' => is_array($data['moduleInfo'] ?? null) ? $data['moduleInfo'] : [],
+        ];
     }
 
     /**
@@ -250,7 +254,7 @@ class Status extends Template implements RendererInterface
     private function _notifyUpdate(): void
     {
         $moduleInfo = $this->getModuleInfo();
-        if ($moduleInfo['has_update'] ?? false) {
+        if (($moduleInfo['has_update'] ?? false) && isset($moduleInfo['latest_version'])) {
             $this->_updateNotifier->notifyVersion($moduleInfo['latest_version']);
         }
     }

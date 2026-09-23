@@ -80,9 +80,9 @@ class SortSalesOrderAddressFieldsTest extends TestCase
     }
 
     #[Test]
-    public function missing_country_id_leaves_sort_orders_untouched(): void
+    public function missing_country_id_reorders_remaining_fields(): void
     {
-        $expected = [
+        $initial = [
             'street' => 20,
             'postcode' => 30,
             'city' => 40,
@@ -90,11 +90,17 @@ class SortSalesOrderAddressFieldsTest extends TestCase
             'region_id' => 60,
         ];
         $plugin = $this->createPlugin('sales_order_create', true);
-        $attributes = $this->createAttributes($expected);
+        $attributes = $this->createAttributes($initial);
 
         $result = $plugin->afterGetAttributes($this->createStub(Form::class), $attributes);
 
-        $this->assertSortOrders($expected, $result);
+        $this->assertSortOrders([
+            'street' => 80,
+            'postcode' => 90,
+            'city' => 100,
+            'region' => 110,
+            'region_id' => 110,
+        ], $result);
     }
 
     /**

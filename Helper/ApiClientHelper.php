@@ -371,15 +371,12 @@ class ApiClientHelper extends AbstractHelper
         $formattedHouseNumberAdditions = [];
 
         foreach ($address['houseNumberAdditions'] ?? [] as $addition) {
-            $formattedHouseNumberAdditions[] = $this->_formatHouseNumberAdditionOption(
-                $address['houseNumber'],
-                $addition
-            );
+            $formattedHouseNumberAdditions[] = $this->_formatHouseNumberAdditionOption($houseNumber, $addition);
         }
 
         if (isset($unknownHouseNumberAddition)) {
             $formattedHouseNumberAdditions[] = $this->_formatHouseNumberAdditionOption(
-                $address['houseNumber'],
+                $houseNumber,
                 $unknownHouseNumberAddition,
                 '(' . __('unknown addition') . ')'
             );

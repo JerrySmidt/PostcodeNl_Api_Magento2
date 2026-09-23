@@ -120,6 +120,42 @@ class UpdateApiStatusConfigTest extends TestCase
     }
 
     #[Test]
+    public function account_info_missing_keys_saves_empty_name_and_inactive_status(): void
+    {
+        $saved = [];
+
+        $connection = $this->createConnection(self::credentialRows('stores', 5));
+        $connection->expects($this->once())->method('fetchOne')->willReturn(false);
+
+        $client = $this->createMock(PostcodeApiClient::class);
+        $client->expects($this->once())->method('setCredentials')->with('key', 'secret');
+        $client->expects($this->once())->method('accountInfo')->willReturn([]);
+        $client->expects($this->never())->method('internationalGetSupportedCountries');
+
+        $apiClientHelper = $this->createMock(ApiClientHelper::class);
+        $apiClientHelper->expects($this->once())->method('getApiClient')->willReturn($client);
+
+        $resourceConfig = $this->createMock(Config::class);
+        $resourceConfig->expects($this->exactly(2))
+            ->method('saveConfig')
+            ->willReturnCallback(
+                function (string $path, string $value, string $scope, int $scopeId) use (&$saved): void {
+                    $saved[] = [$path, $value, $scope, $scopeId];
+                }
+            );
+        $resourceConfig->expects($this->exactly(3))->method('deleteConfig');
+
+        $patch = $this->createPatch($connection, $apiClientHelper, $resourceConfig);
+
+        $patch->apply();
+
+        $this->assertSame([
+            [StoreConfigHelper::PATH['account_name'], '', 'stores', 5],
+            [StoreConfigHelper::PATH['account_status'], ApiClientHelper::API_ACCOUNT_STATUS_INACTIVE, 'stores', 5],
+        ], $saved);
+    }
+
+    #[Test]
     public function inactive_account_saves_name_and_inactive_status(): void
     {
         $saved = [];
