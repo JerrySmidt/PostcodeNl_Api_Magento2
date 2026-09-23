@@ -464,12 +464,9 @@ class ApiAvailabilityMonitorTest extends TestCase
     }
 
     #[Test]
-    public function partial_cache_payload_is_accepted_as_valid_state(): void
+    public function partial_cache_payload_is_merged_with_defaults(): void
     {
-        // Pins source issue: _isValidState validates via ?? defaults, so a payload missing
-        // trip_count/half_open is accepted; _loadState reads those keys directly once tripped.
-        // Update when decoded state is merged over the default state.
-        $cache = $this->createCacheWithPayload('{"failure_times":[],"unavailable_since":null}');
+        $cache = $this->createCacheWithPayload('{"failure_times":[]}');
         $monitor = $this->createMonitor([], $cache);
 
         $this->assertTrue($monitor->isAvailable());
@@ -504,6 +501,25 @@ class ApiAvailabilityMonitorTest extends TestCase
     {
         $cache = $this->createMock(CacheInterface::class);
         $cache->expects($this->once())->method('load')->with(self::CACHE_KEY)->willReturn(false);
+        $cache->expects($this->never())->method('save');
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects($this->never())->method('notice');
+        $logger->expects($this->never())->method('warning');
+        $monitor = $this->createMonitor([], $cache, $logger);
+
+        $monitor->recordSuccess();
+    }
+
+    #[Test]
+    public function record_success_is_no_op_for_reordered_default_state(): void
+    {
+        $cache = $this->createMock(CacheInterface::class);
+        $cache->expects($this->once())->method('load')->with(self::CACHE_KEY)->willReturn(json_encode([
+            'half_open' => false,
+            'trip_count' => 0,
+            'unavailable_since' => null,
+            'failure_times' => [],
+        ]));
         $cache->expects($this->never())->method('save');
         $logger = $this->createMock(LoggerInterface::class);
         $logger->expects($this->never())->method('notice');
