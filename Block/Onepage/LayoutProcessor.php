@@ -64,7 +64,8 @@ class LayoutProcessor extends AbstractBlock implements LayoutProcessorInterface
         // Settings accessible via checkoutProvider.
         $this->jsLayout['components']['checkoutProvider']['postcodeEuConfig'] = $this->storeConfigHelper->getJsInit();
 
-        // Shipping fields
+        // Shipping fields. The shipping fieldset is a hard dependency of this integration; unlike the
+        // optional billing paths below, a missing one is a hard failure and intentionally throws.
         $shippingFields = &$this->_getJsLayoutRef([
             'components',
             'checkout', 'children',
@@ -87,6 +88,8 @@ class LayoutProcessor extends AbstractBlock implements LayoutProcessorInterface
         );
 
         // Billing step
+        $billingConfiguration = null;
+
         try {
             $billingConfiguration = &$this->_getJsLayoutRef([
                 'components',
@@ -137,6 +140,8 @@ class LayoutProcessor extends AbstractBlock implements LayoutProcessorInterface
         }
 
         // Billing address on payment page
+        $billingFields = null;
+
         try {
             $billingFields = &$this->_getJsLayoutRef([
                 'components',
@@ -159,6 +164,8 @@ class LayoutProcessor extends AbstractBlock implements LayoutProcessorInterface
         }
 
         // Compatibility
+        $magePlazaBillingFields = null;
+
         try {
             $magePlazaBillingFields = &$this->_getJsLayoutRef([
                 'components',
@@ -237,9 +244,20 @@ class LayoutProcessor extends AbstractBlock implements LayoutProcessorInterface
      */
     private function _updateDataScope($fields, $dataScope): array
     {
+        $shippingAddressScope = 'shippingAddress';
+
         foreach ($fields as $name => $items) {
             if (isset($items['dataScope'])) {
-                $fields[$name]['dataScope'] = str_replace('shippingAddress', $dataScope, $items['dataScope']);
+                $itemDataScope = $items['dataScope'];
+
+                if ($itemDataScope === $shippingAddressScope
+                    || strpos($itemDataScope, $shippingAddressScope . '.') === 0
+                ) {
+                    $fields[$name]['dataScope'] = $dataScope . substr(
+                        $itemDataScope,
+                        strlen($shippingAddressScope)
+                    );
+                }
             }
 
             if (isset($items['children'])) {

@@ -188,6 +188,29 @@ class LayoutProcessorTest extends TestCase
     }
 
     #[Test]
+    public function data_scope_only_rewrites_leading_shipping_address(): void
+    {
+        $processor = $this->createProcessor($this->createStoreConfigStub());
+
+        $result = $processor->process($this->createLayout());
+        $fields = $this->valueAt($result, self::PAYMENTS_FIELDS);
+
+        $this->assertSame('foo.shippingAddress.bar', $fields['odd_scope']['dataScope']);
+    }
+
+    #[Test]
+    public function data_scope_rewrite_requires_path_boundary(): void
+    {
+        $processor = $this->createProcessor($this->createStoreConfigStub());
+
+        $result = $processor->process($this->createLayout());
+        $fields = $this->valueAt($result, self::PAYMENTS_FIELDS);
+
+        $this->assertSame('shippingAddressFoo.bar', $fields['prefix_lookalike']['dataScope']);
+        $this->assertSame('billingAddress', $fields['root_scope']['dataScope']);
+    }
+
+    #[Test]
     public function billing_form_without_data_scope_prefix_is_left_without_autofill(): void
     {
         $logger = $this->createMock(LoggerInterface::class);
@@ -388,6 +411,9 @@ class LayoutProcessorTest extends TestCase
                 'children' => ['nested' => ['dataScope' => 'shippingAddress.nested']],
             ],
             "$billingForm.plain_no_scope" => ['config' => ['someOption' => 'kept']],
+            "$billingForm.odd_scope" => ['dataScope' => 'foo.shippingAddress.bar'],
+            "$billingForm.prefix_lookalike" => ['dataScope' => 'shippingAddressFoo.bar'],
+            "$billingForm.root_scope" => ['dataScope' => 'shippingAddress'],
             "$payments.checkmo.children.form-fields.children.ignored" => ['dataScope' => 'shippingAddress.ignored'],
             "$payments.free-form.dataScopePrefix" => 'billingAddress',
             "$sharedForm.firstname" => [
