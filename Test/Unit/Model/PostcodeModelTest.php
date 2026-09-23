@@ -49,11 +49,6 @@ class PostcodeModelTest extends TestCase
         return [
             'autocomplete' => ['getAddressAutocomplete', ['nld', 'Damrak'], 'getAddressAutocomplete'],
             'details' => ['getAddressDetails', [self::ADDRESS_CONTEXT], 'getAddressDetails'],
-            'details country' => [
-                'getAddressDetailsCountry',
-                [self::ADDRESS_CONTEXT, 'NLD'],
-                'getAddressDetails',
-            ],
             'nl address' => ['getNlAddress', ['2012ES', '30'], 'getNlAddress'],
             'validate address' => [
                 'validateAddress',
@@ -134,12 +129,6 @@ class PostcodeModelTest extends TestCase
                 'getAddressDetails',
                 self::dutchAddressDetails(),
             ],
-            'details country' => [
-                'getAddressDetailsCountry',
-                [self::ADDRESS_CONTEXT, 'NLD'],
-                'getAddressDetails',
-                self::dutchAddressDetails(),
-            ],
             'nl address' => [
                 'getNlAddress',
                 ['2012ES', '30'],
@@ -175,26 +164,6 @@ class PostcodeModelTest extends TestCase
                 ],
             ],
         ];
-    }
-
-    #[Test]
-    public function details_country_forwards_dispatch_country_alongside_context(): void
-    {
-        // Pins source issue: PostcodeModel.php:65 passes $dispatchCountry to ApiClientHelper::getAddressDetails(),
-        // which accepts only $context and silently ignores the second argument.
-        $context = self::ADDRESS_CONTEXT;
-        $dispatchCountry = 'NLD';
-        $payload = self::dutchAddressDetails();
-
-        $helper = $this->createMock(ApiClientHelper::class);
-        $helper->expects($this->once())
-            ->method('getAddressDetails')
-            ->with($context, $dispatchCountry)
-            ->willReturn($payload);
-
-        $result = $this->createModel($helper)->getAddressDetailsCountry($context, $dispatchCountry);
-
-        $this->assertSame([$payload], $result);
     }
 
     #[Test]
