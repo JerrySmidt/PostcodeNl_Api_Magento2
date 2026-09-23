@@ -78,7 +78,7 @@ class AddAddressAutofillToOrderCreateForm
             $countryId = $address->getCountryId() ?? $this->_directoryHelper->getDefaultCountry();
         }
 
-        $isVisible = in_array($countryId, $this->_storeConfigHelper->getEnabledCountries($storeId));
+        $isVisible = in_array($countryId, $this->_storeConfigHelper->getEnabledCountries($storeId), true);
 
         if ($autocompleteBehavior === AdminAddressAutocompleteBehavior::SINGLE_INPUT) {
             $isNlComponentDisabled = true;
