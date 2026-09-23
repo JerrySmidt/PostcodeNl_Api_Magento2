@@ -52,6 +52,7 @@ class CityTest extends TestCase
             'german diacritics' => ['München'],
             'german sharp s' => ['Straße 5'],
             'combining mark' => ["Cafe\u{0301}"],
+            'internal tab' => ["Amsterdam\tWest"],
             'straight apostrophe' => ["O'Brien"],
             'typographic apostrophe' => ['O’Brien'],
             'leading apostrophe and hyphen' => ["'s-Hertogenbosch"],
@@ -128,8 +129,6 @@ class CityTest extends TestCase
     #[Test]
     public function trailing_newline_within_length_is_accepted(): void
     {
-        // Pins source issue: the City regex matches \s within a greedy {1,100}, so a trailing newline
-        // inside the length limit is accepted; only the over-length case is rejected.
         $validator = new City();
 
         $result = $validator->isValid($this->createCustomer("Amsterdam\n"));
@@ -138,13 +137,37 @@ class CityTest extends TestCase
     }
 
     #[Test]
-    public function trailing_newline_past_length_limit_is_rejected(): void
+    public function trailing_newline_is_trimmed_before_length_check(): void
     {
         $validator = new City();
 
         $result = $validator->isValid($this->createCustomer(str_repeat('a', 100) . "\n"));
 
+        $this->assertTrue($result);
+    }
+
+    #[Test]
+    public function surrounding_whitespace_is_trimmed(): void
+    {
+        $validator = new City();
+
+        $result = $validator->isValid($this->createCustomer('  Amsterdam  '));
+
+        $this->assertTrue($result);
+    }
+
+    #[Test]
+    public function internal_newline_is_rejected(): void
+    {
+        $validator = new City();
+
+        $result = $validator->isValid($this->createCustomer("Amster\ndam"));
+
         $this->assertFalse($result);
+        $messages = $validator->getMessages();
+        $message = reset($messages);
+        $this->assertIsArray($message);
+        $this->assertArrayHasKey('city', $message);
     }
 
     private function createCustomer(?string $city): Customer
