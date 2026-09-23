@@ -129,18 +129,25 @@ class ApiClientHelperTest extends TestCase
     }
 
     #[Test]
-    public function postcode_with_surrounding_whitespace_is_rejected(): void
+    public function postcode_and_house_number_whitespace_is_trimmed(): void
     {
-        // Pins source issue: the Dutch postcode regex runs on raw input while PostcodeApiClient trims first.
         $client = $this->createMock(PostcodeApiClient::class);
-        $client->expects($this->never())->method('dutchAddressByPostcode');
+        $client->expects($this->once())
+            ->method('dutchAddressByPostcode')
+            ->with('1234AB', 42, 'A')
+            ->willReturn([
+                'houseNumber' => 42,
+                'houseNumberAddition' => 'A',
+                'houseNumberAdditions' => ['A'],
+                'street' => 'Damrak',
+                'building' => '42',
+            ]);
 
         $helper = $this->createAvailableHelper([], ['client' => $client]);
 
-        $result = $helper->getNlAddress(' 1234AB ', '42');
+        $result = $helper->getNlAddress(' 1234AB ', ' 42A ');
 
-        $this->assertTrue($result['error']);
-        $this->assertSame('Invalid zip code.', (string) $result['message']);
+        $this->assertSame('valid', $result['status']);
     }
 
     #[Test]
@@ -810,6 +817,16 @@ class ApiClientHelperTest extends TestCase
         $result = $helper->validateAddress('nld');
 
         $this->assertSame(['matches' => []], $result);
+    }
+
+    #[Test]
+    public function no_arguments_returns_error_payload(): void
+    {
+        $helper = $this->createAvailableHelper([]);
+
+        $result = $helper->validateAddress();
+
+        $this->assertTrue($result['error']);
     }
 
     #[Test]

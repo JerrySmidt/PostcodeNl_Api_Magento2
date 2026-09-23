@@ -339,6 +339,9 @@ class ApiClientHelper extends AbstractHelper
         $address = null;
         $matches = [];
 
+        $zipCode = trim($zipCode);
+        $houseNumber = trim($houseNumber);
+
         if (!preg_match('/^[1-9]\d{3}\s?[a-z]{2}$/i', $zipCode)) {
             return ['error' => true, 'message' => __('Invalid zip code.')];
         }
@@ -444,6 +447,7 @@ class ApiClientHelper extends AbstractHelper
         $result = ['error' => true, 'message' => __('Something went wrong. Please try again.')];
 
         if ($this->_storeConfigHelper->isDebugging()) {
+            // Developer-only: requires api_debug and isDevAllowed(); include full trace for debugging.
             $result['exception'] = __('Exception %1 occurred.', get_class($exception)) . $exception->getTraceAsString();
             $result['message'] = __($exception->getMessage());
             $result['magento_debug_info'] = $this->_getDebugInfo();
@@ -512,6 +516,11 @@ class ApiClientHelper extends AbstractHelper
     public function validateAddress(): array
     {
         $args = func_get_args();
+
+        if (!isset($args[0]) || !is_string($args[0])) {
+            return ['error' => true, 'message' => __('Invalid address.')];
+        }
+
         if (strlen($args[0]) === 2) {
             // Support country ISO 2 code. "INVALID" will throw in client.
             $args[0] = $this->getCountryIso3Code($args[0]) ?? 'INVALID';
