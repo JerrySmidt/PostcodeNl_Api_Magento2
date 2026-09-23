@@ -213,6 +213,77 @@ class DataTest extends TestCase
     }
 
     #[Test]
+    public function unexpected_packagist_shape_falls_back_to_current_version(): void
+    {
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects($this->once())
+            ->method('error')
+            ->with('Failed to get package data:', $this->arrayHasKey('exception'));
+
+        $helper = $this->createHelper([
+            'storeConfigHelper' => $this->createConfigStub(['module_version' => '1.2.3']),
+            'dir' => $this->createVarDir(),
+            'fs' => $this->createFilesystem(),
+            'curl' => $this->createPackagistCurl(200, '{"packages":{"other/package":[{"version":"1.4.0"}]}}'),
+            'logger' => $logger,
+        ]);
+
+        $info = $helper->getModuleInfo();
+
+        $this->assertSame('1.2.3', $info['latest_version']);
+        $this->assertFalse($info['has_update']);
+    }
+
+    #[Test]
+    public function non_array_packagist_json_falls_back_to_current_version(): void
+    {
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects($this->once())
+            ->method('error')
+            ->with('Failed to get package data:', $this->arrayHasKey('exception'));
+
+        $helper = $this->createHelper([
+            'storeConfigHelper' => $this->createConfigStub(['module_version' => '1.2.3']),
+            'dir' => $this->createVarDir(),
+            'fs' => $this->createFilesystem(),
+            'curl' => $this->createPackagistCurl(200, '"hello"'),
+            'logger' => $logger,
+        ]);
+
+        $info = $helper->getModuleInfo();
+
+        $this->assertSame('1.2.3', $info['latest_version']);
+        $this->assertFalse($info['has_update']);
+    }
+
+    #[Test]
+    public function stat_failure_skips_if_modified_since_header(): void
+    {
+        $fs = $this->createStub(DriverInterface::class);
+        $fs->method('isDirectory')->willReturn(true);
+        $fs->method('isExists')->willReturn(true);
+        $fs->method('stat')->willReturn(false);
+        $fs->method('filePutContents')->willReturn(true);
+
+        $curl = $this->createMock(Curl::class);
+        $curl->expects($this->never())->method('setHeaders');
+        $curl->method('getStatus')->willReturn(200);
+        $curl->method('getBody')->willReturn($this->packagistBody('1.4.0'));
+
+        $helper = $this->createHelper([
+            'storeConfigHelper' => $this->createConfigStub(['module_version' => '1.2.3']),
+            'dir' => $this->createVarDir(),
+            'fs' => $fs,
+            'curl' => $curl,
+        ]);
+
+        $info = $helper->getModuleInfo();
+
+        $this->assertSame('1.4.0', $info['latest_version']);
+        $this->assertTrue($info['has_update']);
+    }
+
+    #[Test]
     public function not_modified_response_reads_cached_package_data(): void
     {
         $helper = $this->createHelper([
