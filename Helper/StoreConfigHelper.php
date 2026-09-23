@@ -352,7 +352,7 @@ class StoreConfigHelper extends AbstractHelper
             if ($this->_appState->getAreaCode() === \Magento\Backend\App\Area\FrontNameResolver::AREA_CODE) {
                 [$scope, $scopeId] = $this->getScopeFromRequest();
 
-                return [$scope, $scopeId ?: null];
+                return [$scope, $scopeId];
             }
         } catch (\Magento\Framework\Exception\LocalizedException $e) {
             // Area code not set, fall through.

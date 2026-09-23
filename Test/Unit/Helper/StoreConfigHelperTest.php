@@ -258,12 +258,12 @@ class StoreConfigHelperTest extends TestCase
     }
 
     #[Test]
-    public function admin_area_without_scope_params_uses_default_scope_with_null_code(): void
+    public function admin_area_without_scope_params_uses_default_scope_with_zero_code(): void
     {
         $scopeConfig = $this->createMock(ScopeConfigInterface::class);
         $scopeConfig->expects($this->once())
             ->method('getValue')
-            ->with(StoreConfigHelper::PATH['api_key'], AppScopeInterface::SCOPE_DEFAULT, null)
+            ->with(StoreConfigHelper::PATH['api_key'], AppScopeInterface::SCOPE_DEFAULT, 0)
             ->willReturn('KEY');
 
         $helper = $this->createHelper([], FrontNameResolver::AREA_CODE, [
