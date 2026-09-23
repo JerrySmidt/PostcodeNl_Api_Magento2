@@ -46,23 +46,8 @@ class ValidatorPluginTest extends TestCase
             '2.4.8 default false' => ['2.4.8', false],
             '2.4.8 break chain true' => ['2.4.8', true],
             '2.4.8-p1' => ['2.4.8-p1', false],
+            '2.4.8.1' => ['2.4.8.1', false],
         ];
-    }
-
-    #[Test]
-    public function longer_version_with_2_4_8_prefix_also_swaps(): void
-    {
-        // Pins source issue: the check is a 5-char prefix match, so any version starting with
-        // '2.4.8' (e.g. 2.4.80) swaps the validator. Fine for Magento's x.y.z scheme, but brittle.
-        $plugin = $this->createPlugin('2.4.80');
-
-        $result = $plugin->beforeAddValidator(
-            $this->createStub(Validator::class),
-            $this->createConstraint('city_validator')
-        );
-
-        $this->assertIsArray($result);
-        $this->assertInstanceOf(City::class, $result[0]);
     }
 
     #[Test]
@@ -87,6 +72,7 @@ class ValidatorPluginTest extends TestCase
         return [
             'newer' => ['2.4.9'],
             'older' => ['2.4.7'],
+            '2.4.8 prefix but not the 2.4.8 line' => ['2.4.80'],
         ];
     }
 

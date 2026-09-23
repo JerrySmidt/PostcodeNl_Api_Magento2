@@ -170,6 +170,19 @@ class CityTest extends TestCase
         $this->assertArrayHasKey('city', $message);
     }
 
+    #[Test]
+    public function messages_do_not_accumulate_across_calls(): void
+    {
+        $validator = new City();
+
+        $invalid = $validator->isValid($this->createCustomer('Amsterdam!'));
+        $valid = $validator->isValid($this->createCustomer('Amsterdam'));
+
+        $this->assertFalse($invalid);
+        $this->assertTrue($valid);
+        $this->assertSame([], $validator->getMessages());
+    }
+
     private function createCustomer(?string $city): Customer
     {
         $customer = $this->createPartialMockWithReflection(Customer::class, ['getCity']);

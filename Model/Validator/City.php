@@ -22,6 +22,8 @@ class City extends AbstractValidator
      */
     public function isValid($customer): bool
     {
+        $this->_clearMessages();
+
         $city = $customer->getCity();
         if ($city === null) {
             return true;

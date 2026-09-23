@@ -67,7 +67,6 @@ class Status extends Template implements RendererInterface
         UpdateNotifier $updateNotifier,
         array $data = []
     ) {
-        $this->_scopeConfig = $context->getScopeConfig();
         $this->_storeConfigHelper = $storeConfigHelper;
         $this->_apiClientHelper = $apiClientHelper;
         $this->_resourceConfig = $resourceConfig;
