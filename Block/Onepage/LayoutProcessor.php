@@ -114,12 +114,25 @@ class LayoutProcessor extends AbstractBlock implements LayoutProcessorInterface
                 // Billing fields
                 $dataScopePrefix = $billingForm['dataScopePrefix'] ?? null;
 
-                if ($dataScopePrefix !== null) {
-                    $billingForm['children']['form-fields']['children'] += $this->_updateCustomScope($autofillFields, $dataScopePrefix);
-                    $billingForm['children']['form-fields']['children'] = $this->_updateDataScope($billingForm['children']['form-fields']['children'], $dataScopePrefix);
+                if ($dataScopePrefix === null) {
+                    $this->_logger->warning(sprintf(
+                        'Billing form "%s" has no dataScopePrefix; skipping autofill fields.',
+                        $key
+                    ));
+                } else {
+                    $billingForm['children']['form-fields']['children'] += $this->_updateCustomScope(
+                        $autofillFields,
+                        $dataScopePrefix,
+                    );
+                    $billingForm['children']['form-fields']['children'] = $this->_updateDataScope(
+                        $billingForm['children']['form-fields']['children'],
+                        $dataScopePrefix,
+                    );
                 }
 
-                $billingForm['children']['form-fields']['children'] = $this->_changeAddressFieldsPosition($billingForm['children']['form-fields']['children']);
+                $billingForm['children']['form-fields']['children'] = $this->_changeAddressFieldsPosition(
+                    $billingForm['children']['form-fields']['children'],
+                );
             }
         }
 

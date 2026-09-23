@@ -10,6 +10,7 @@ use PHPUnit\Framework\TestCase;
 use PostcodeEu\AddressValidation\Block\Onepage\LayoutProcessor;
 use PostcodeEu\AddressValidation\Helper\Data as DataHelper;
 use PostcodeEu\AddressValidation\Helper\StoreConfigHelper;
+use Psr\Log\LoggerInterface;
 
 /**
  * Checkout JS layout transforms for LayoutProcessor.
@@ -189,7 +190,10 @@ class LayoutProcessorTest extends TestCase
     #[Test]
     public function billing_form_without_data_scope_prefix_is_left_without_autofill(): void
     {
-        $processor = $this->createProcessor($this->createStoreConfigStub());
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects($this->once())->method('warning');
+
+        $processor = $this->createProcessor($this->createStoreConfigStub(), null, $logger);
 
         $result = $processor->process($this->createLayout());
         $fields = $this->valueAt($result, self::PAYMENTS_LIST . '.noprefix-form.children.form-fields.children');
@@ -255,10 +259,14 @@ class LayoutProcessorTest extends TestCase
 
     private function createProcessor(
         StoreConfigHelper $storeConfigHelper,
-        ?DataHelper $dataHelper = null
+        ?DataHelper $dataHelper = null,
+        ?LoggerInterface $logger = null
     ): LayoutProcessor {
+        $context = $this->createStub(Context::class);
+        $context->method('getLogger')->willReturn($logger ?? $this->createStub(LoggerInterface::class));
+
         return new LayoutProcessor(
-            $this->createStub(Context::class),
+            $context,
             $storeConfigHelper,
             $dataHelper ?? $this->createDataHelperStub()
         );

@@ -224,12 +224,21 @@ class Status extends Template implements RendererInterface
         $data = $this->_serializer->unserialize($cachedData);
 
         if (!is_array($data)) {
+            $this->_logger->warning('Ignoring malformed Postcode.eu status cache payload.');
+
             return [];
         }
 
+        $accountInfo = $data['accountInfo'] ?? null;
+        $moduleInfo = $data['moduleInfo'] ?? null;
+
+        if (!is_array($accountInfo) || !is_array($moduleInfo)) {
+            $this->_logger->warning('Postcode.eu status cache payload is missing account/module info.');
+        }
+
         return [
-            'accountInfo' => is_array($data['accountInfo'] ?? null) ? $data['accountInfo'] : [],
-            'moduleInfo' => is_array($data['moduleInfo'] ?? null) ? $data['moduleInfo'] : [],
+            'accountInfo' => is_array($accountInfo) ? $accountInfo : [],
+            'moduleInfo' => is_array($moduleInfo) ? $moduleInfo : [],
         ];
     }
 
@@ -254,8 +263,17 @@ class Status extends Template implements RendererInterface
     private function _notifyUpdate(): void
     {
         $moduleInfo = $this->getModuleInfo();
-        if (($moduleInfo['has_update'] ?? false) && isset($moduleInfo['latest_version'])) {
-            $this->_updateNotifier->notifyVersion($moduleInfo['latest_version']);
+
+        if (!($moduleInfo['has_update'] ?? false)) {
+            return;
         }
+
+        if (!isset($moduleInfo['latest_version'])) {
+            $this->_logger->warning('Module update flagged without a latest_version; skipping notification.');
+
+            return;
+        }
+
+        $this->_updateNotifier->notifyVersion($moduleInfo['latest_version']);
     }
 }

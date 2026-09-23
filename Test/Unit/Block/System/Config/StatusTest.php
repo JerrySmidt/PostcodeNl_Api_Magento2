@@ -21,6 +21,7 @@ use PostcodeEu\AddressValidation\Helper\ApiClientHelper;
 use PostcodeEu\AddressValidation\Helper\Data as DataHelper;
 use PostcodeEu\AddressValidation\Helper\StoreConfigHelper;
 use PostcodeEu\AddressValidation\Model\UpdateNotification\UpdateNotifier;
+use Psr\Log\LoggerInterface;
 
 /**
  * Admin status UI branching and per-scope cache handling for Status.
@@ -306,9 +307,13 @@ class StatusTest extends TestCase
         $serializer = $this->createStub(SerializerInterface::class);
         $serializer->method('unserialize')->willReturn($cachedData);
 
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects($this->once())->method('warning');
+
         $block = $this->createRenderingBlock([
             'cacheFrontendPool' => $this->createCachePool($cache),
             'serializer' => $serializer,
+            'logger' => $logger,
         ]);
 
         $block->render($this->createStub(AbstractElement::class));
@@ -407,8 +412,13 @@ class StatusTest extends TestCase
      */
     private function constructorArgs(array $overrides): array
     {
+        $context = $overrides['context'] ?? $this->createStub(Context::class);
+        $context->method('getLogger')->willReturn(
+            $overrides['logger'] ?? $this->createStub(LoggerInterface::class)
+        );
+
         return [
-            $overrides['context'] ?? $this->createStub(Context::class),
+            $context,
             $overrides['storeConfigHelper'] ?? $this->createStoreConfigStub(),
             $overrides['apiClientHelper'] ?? $this->createStub(ApiClientHelper::class),
             $overrides['resourceConfig'] ?? $this->createStub(ConfigInterface::class),
