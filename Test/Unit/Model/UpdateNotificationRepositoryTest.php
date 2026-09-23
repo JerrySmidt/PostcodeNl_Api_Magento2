@@ -192,9 +192,8 @@ class UpdateNotificationRepositoryTest extends TestCase
     }
 
     #[Test]
-    public function set_version_notified_does_not_wrap_resource_failure(): void
+    public function set_version_notified_wraps_resource_failure(): void
     {
-        // Pins source issue: setVersionNotified() calls the resource directly, bypassing the CouldNotSaveException wrap in save().
         $missing = $this->createNotification();
         $created = $this->createNotification();
 
@@ -206,7 +205,8 @@ class UpdateNotificationRepositoryTest extends TestCase
 
         $repository = new UpdateNotificationRepository($resource, $factory);
 
-        $this->expectException(\RuntimeException::class);
+        $this->expectException(CouldNotSaveException::class);
+        $this->expectExceptionMessage('deadlock');
 
         $repository->setVersionNotified('1.3.0');
     }
