@@ -37,22 +37,15 @@ class AutocompleteMatchTest extends TestCase
     }
 
     #[Test]
-    public function incomplete_match_array_triggers_undefined_key_warning(): void
+    public function incomplete_match_array_falls_back_to_defaults(): void
     {
-        // Pins source issue: the constructor reads all six keys unguarded. Magento's unit error
-        // handler turns the warning into a test error, so intercept it locally instead.
-        $warning = null;
-        set_error_handler(function (int $errno, string $errstr) use (&$warning): bool {
-            $warning ??= $errstr;
-            return true;
-        });
+        $autocompleteMatch = new AutocompleteMatch(['value' => 'V', 'label' => 'L']);
 
-        try {
-            new AutocompleteMatch(['value' => 'V', 'label' => 'L']);
-        } finally {
-            restore_error_handler();
-        }
-
-        $this->assertStringContainsString('Undefined array key "description"', (string) $warning);
+        $this->assertSame('V', $autocompleteMatch->getValue());
+        $this->assertSame('L', $autocompleteMatch->getLabel());
+        $this->assertSame('', $autocompleteMatch->getDescription());
+        $this->assertSame('', $autocompleteMatch->getPrecision());
+        $this->assertSame('', $autocompleteMatch->getContext());
+        $this->assertSame([], $autocompleteMatch->getHighlights());
     }
 }
