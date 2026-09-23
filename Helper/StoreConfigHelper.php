@@ -144,7 +144,19 @@ class StoreConfigHelper extends AbstractHelper
      */
     public function getSupportedCountries($storeId = null): array
     {
-        return json_decode($this->getValue('supported_countries', $storeId) ?? '[]');
+        $value = $this->getValue('supported_countries', $storeId) ?? '[]';
+        $decoded = json_decode($value);
+
+        if (!is_array($decoded)) {
+            $this->_logger->error(
+                'Invalid supported_countries configuration; treating as empty.',
+                ['value' => $value]
+            );
+
+            return [];
+        }
+
+        return $decoded;
     }
 
     /**

@@ -24,7 +24,7 @@ use PHPUnit\Framework\TestCase;
 use PostcodeEu\AddressValidation\Helper\StoreConfigHelper;
 use PostcodeEu\AddressValidation\Model\Config\Source\NlInputBehavior;
 use PostcodeEu\AddressValidation\Model\Config\Source\ShowHideAddressFields;
-use TypeError;
+use Psr\Log\LoggerInterface;
 
 /**
  * Path aliases, scope resolution, credentials, countries and JS init config for StoreConfigHelper.
@@ -447,16 +447,28 @@ class StoreConfigHelperTest extends TestCase
     }
 
     #[Test]
-    public function invalid_supported_countries_json_raises_type_error(): void
+    #[DataProvider('invalidSupportedCountriesProvider')]
+    public function invalid_supported_countries_config_returns_empty_array(string $value): void
     {
-        // Pins source issue: getSupportedCountries() has no json_decode null guard, so invalid JSON surfaces as TypeError.
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects($this->once())->method('error');
+
         $helper = $this->createHelper([
-            StoreConfigHelper::PATH['supported_countries'] => 'not-json',
-        ]);
+            StoreConfigHelper::PATH['supported_countries'] => $value,
+        ], 'frontend', ['logger' => $logger]);
 
-        $this->expectException(TypeError::class);
+        $this->assertSame([], $helper->getSupportedCountries());
+    }
 
-        $helper->getSupportedCountries();
+    /**
+     * @return array<string, array{string}>
+     */
+    public static function invalidSupportedCountriesProvider(): array
+    {
+        return [
+            'invalid json' => ['not-json'],
+            'scalar json' => ['"hello"'],
+        ];
     }
 
     #[Test]
@@ -480,7 +492,7 @@ class StoreConfigHelperTest extends TestCase
     /**
      * @param array<string, string|null> $config
      * @param string $areaCode
-     * @param array{scopeConfig?: ScopeConfigInterface, request?: RequestInterface, encryptor?: EncryptorInterface, developerHelper?: DeveloperHelper} $overrides
+     * @param array{scopeConfig?: ScopeConfigInterface, request?: RequestInterface, encryptor?: EncryptorInterface, developerHelper?: DeveloperHelper, logger?: LoggerInterface} $overrides
      * @return StoreConfigHelper
      */
     private function createHelper(array $config = [], string $areaCode = 'frontend', array $overrides = []): StoreConfigHelper
@@ -509,6 +521,9 @@ class StoreConfigHelperTest extends TestCase
         $context->method('getUrlBuilder')->willReturn($urlBuilder);
         $context->method('getRequest')->willReturn(
             $overrides['request'] ?? $this->createStub(RequestInterface::class)
+        );
+        $context->method('getLogger')->willReturn(
+            $overrides['logger'] ?? $this->createStub(LoggerInterface::class)
         );
 
         $store = $this->createStub(StoreInterface::class);
