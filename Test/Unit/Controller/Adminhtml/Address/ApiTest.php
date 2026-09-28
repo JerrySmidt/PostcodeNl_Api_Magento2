@@ -115,6 +115,21 @@ class ApiTest extends TestCase
         $controller->execute();
     }
 
+    #[Test]
+    public function non_string_method_is_rejected_as_bad_request(): void
+    {
+        $resultJson = $this->createMock(Json::class);
+        $controller = $this->createController(null, $resultJson);
+        $this->stubRequestParams(['method' => ['postcode']]);
+        $resultJson->expects($this->once())->method('setHttpResponseCode')->with(400)->willReturnSelf();
+        $resultJson->expects($this->once())
+            ->method('setData')
+            ->with(['error' => 'Invalid service method'])
+            ->willReturnSelf();
+
+        $controller->execute();
+    }
+
     /**
      * @param PostcodeModelInterface|null $postcodeModel
      * @param Json|null $resultJson
@@ -149,7 +164,7 @@ class ApiTest extends TestCase
     }
 
     /**
-     * @param array<string, string> $params
+     * @param array<string, mixed> $params
      */
     private function stubRequestParams(array $params): void
     {
