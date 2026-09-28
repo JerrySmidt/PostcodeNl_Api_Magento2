@@ -10,7 +10,6 @@ use Magento\Framework\App\Config\ConfigResource\ConfigInterface;
 use Magento\Framework\App\ObjectManager;
 use Magento\Framework\Data\Form\Element\AbstractElement;
 use Magento\Framework\ObjectManagerInterface;
-use Magento\Framework\Serialize\SerializerInterface;
 use Magento\Store\Model\ScopeInterface;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Test;
@@ -192,18 +191,16 @@ class StatusTest extends TestCase
         $dataHelper = $this->createStub(DataHelper::class);
         $dataHelper->method('getModuleInfo')->willReturn($moduleInfo);
 
-        $serializer = $this->createMock(SerializerInterface::class);
-        $serializer->expects($this->once())
-            ->method('serialize')
-            ->with(['accountInfo' => $accountInfo, 'moduleInfo' => $moduleInfo])
-            ->willReturn('serialized-payload');
-        $serializer->expects($this->never())->method('unserialize');
-
         $cache = $this->createMock(CacheInterface::class);
         $cache->expects($this->once())->method('load')->with($cacheId)->willReturn(false);
         $cache->expects($this->once())
             ->method('save')
-            ->with('serialized-payload', $cacheId, [], Status::CACHE_LIFETIME_SECONDS)
+            ->with(
+                json_encode(['accountInfo' => $accountInfo, 'moduleInfo' => $moduleInfo]),
+                $cacheId,
+                [],
+                Status::CACHE_LIFETIME_SECONDS
+            )
             ->willReturn(true);
 
         $block = $this->createRenderingBlock([
@@ -213,8 +210,42 @@ class StatusTest extends TestCase
             ]),
             'apiClientHelper' => $apiClient,
             'cacheFrontendPool' => $this->createCachePool($cache),
-            'serializer' => $serializer,
             'dataHelper' => $dataHelper,
+        ]);
+
+        $block->render($this->createStub(AbstractElement::class));
+
+        $this->assertSame($accountInfo, $block->getAccountInfo());
+        $this->assertSame($moduleInfo, $block->getModuleInfo());
+    }
+
+    #[Test]
+    public function unencodable_payload_is_rendered_but_not_cached(): void
+    {
+        $accountInfo = ['account_name' => "\xB1\x31"];
+        $moduleInfo = ['version' => '1.2.3'];
+
+        $apiClient = $this->createMock(ApiClientHelper::class);
+        $apiClient->expects($this->once())->method('getAccountInfo')->willReturn($accountInfo);
+
+        $dataHelper = $this->createStub(DataHelper::class);
+        $dataHelper->method('getModuleInfo')->willReturn($moduleInfo);
+
+        $cache = $this->createMock(CacheInterface::class);
+        $cache->expects($this->once())->method('load')->willReturn(false);
+        $cache->expects($this->never())->method('save');
+
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects($this->once())->method('warning');
+
+        $block = $this->createRenderingBlock([
+            'storeConfigHelper' => $this->createStoreConfigStub([
+                'account_status' => ApiClientHelper::API_ACCOUNT_STATUS_ACTIVE,
+            ]),
+            'apiClientHelper' => $apiClient,
+            'cacheFrontendPool' => $this->createCachePool($cache),
+            'dataHelper' => $dataHelper,
+            'logger' => $logger,
         ]);
 
         $block->render($this->createStub(AbstractElement::class));
@@ -267,13 +298,8 @@ class StatusTest extends TestCase
 
         $cache = $this->createMock(CacheInterface::class);
         $cache->expects($this->once())->method('load')->with('postcode-eu-status-stores-5')
-            ->willReturn('cached-payload');
+            ->willReturn(json_encode($cachedData));
         $cache->expects($this->never())->method('save');
-
-        $serializer = $this->createMock(SerializerInterface::class);
-        $serializer->expects($this->once())->method('unserialize')->with('cached-payload')
-            ->willReturn($cachedData);
-        $serializer->expects($this->never())->method('serialize');
 
         $apiClient = $this->createMock(ApiClientHelper::class);
         $apiClient->expects($this->never())->method('getAccountInfo');
@@ -287,7 +313,6 @@ class StatusTest extends TestCase
             ]),
             'apiClientHelper' => $apiClient,
             'cacheFrontendPool' => $this->createCachePool($cache),
-            'serializer' => $serializer,
             'dataHelper' => $dataHelper,
         ]);
 
@@ -299,20 +324,16 @@ class StatusTest extends TestCase
 
     #[Test]
     #[DataProvider('malformedCachedDataProvider')]
-    public function malformed_cache_hit_degrades_to_empty_info(mixed $cachedData): void
+    public function malformed_cache_hit_degrades_to_empty_info(string $cachedData): void
     {
         $cache = $this->createStub(CacheInterface::class);
-        $cache->method('load')->willReturn('cached-payload');
-
-        $serializer = $this->createStub(SerializerInterface::class);
-        $serializer->method('unserialize')->willReturn($cachedData);
+        $cache->method('load')->willReturn($cachedData);
 
         $logger = $this->createMock(LoggerInterface::class);
         $logger->expects($this->once())->method('warning');
 
         $block = $this->createRenderingBlock([
             'cacheFrontendPool' => $this->createCachePool($cache),
-            'serializer' => $serializer,
             'logger' => $logger,
         ]);
 
@@ -323,14 +344,15 @@ class StatusTest extends TestCase
     }
 
     /**
-     * @return array<string, array{mixed}>
+     * @return array<string, array{string}>
      */
     public static function malformedCachedDataProvider(): array
     {
         return [
-            'scalar payload' => ['not-an-array'],
-            'missing keys' => [['unexpected' => true]],
-            'wrong key types' => [['accountInfo' => 'nope', 'moduleInfo' => 42]],
+            'invalid json' => ['not-an-array'],
+            'scalar payload' => ['42'],
+            'missing keys' => ['{"unexpected":true}'],
+            'wrong key types' => ['{"accountInfo":"nope","moduleInfo":42}'],
         ];
     }
 
@@ -424,7 +446,6 @@ class StatusTest extends TestCase
             $overrides['resourceConfig'] ?? $this->createStub(ConfigInterface::class),
             $overrides['cacheTypeList'] ?? $this->createStub(TypeListInterface::class),
             $overrides['cacheFrontendPool'] ?? $this->createCachePool($this->createCacheStub()),
-            $overrides['serializer'] ?? $this->createStub(SerializerInterface::class),
             $overrides['dataHelper'] ?? $this->createStub(DataHelper::class),
             $overrides['updateNotifier'] ?? $this->createStub(UpdateNotifier::class),
         ];
@@ -460,14 +481,10 @@ class StatusTest extends TestCase
     private function createRenderingBlockWithCacheData(array $cachedData, array $overrides = []): Status
     {
         $cache = $this->createStub(CacheInterface::class);
-        $cache->method('load')->willReturn('cached-payload');
-
-        $serializer = $this->createStub(SerializerInterface::class);
-        $serializer->method('unserialize')->willReturn($cachedData);
+        $cache->method('load')->willReturn(json_encode($cachedData));
 
         return $this->createRenderingBlock($overrides + [
             'cacheFrontendPool' => $this->createCachePool($cache),
-            'serializer' => $serializer,
         ]);
     }
 

@@ -8,7 +8,6 @@ use Magento\Framework\App\Cache\TypeListInterface as CacheTypeList;
 use Magento\Framework\App\Config\ConfigResource\ConfigInterface;
 use Magento\Framework\Data\Form\Element\AbstractElement;
 use Magento\Framework\Data\Form\Element\Renderer\RendererInterface;
-use Magento\Framework\Serialize\SerializerInterface;
 use PostcodeEu\AddressValidation\Helper\ApiClientHelper;
 use PostcodeEu\AddressValidation\Helper\Data as DataHelper;
 use PostcodeEu\AddressValidation\Helper\StoreConfigHelper;
@@ -33,8 +32,6 @@ class Status extends Template implements RendererInterface
     protected $_cacheTypeList;
     /** @var CacheFrontendPool */
     protected $_cacheFrontendPool;
-    /** @var SerializerInterface */
-    protected $_serializer;
     /** @var DataHelper */
     protected $_dataHelper;
     /** @var UpdateNotifier */
@@ -50,7 +47,6 @@ class Status extends Template implements RendererInterface
      * @param ConfigInterface $resourceConfig
      * @param CacheTypeList $cacheTypeList
      * @param CacheFrontendPool $cacheFrontendPool
-     * @param SerializerInterface $serializer
      * @param DataHelper $dataHelper
      * @param UpdateNotifier $updateNotifier
      * @param array $data
@@ -62,7 +58,6 @@ class Status extends Template implements RendererInterface
         ConfigInterface $resourceConfig,
         CacheTypeList $cacheTypeList,
         CacheFrontendPool $cacheFrontendPool,
-        SerializerInterface $serializer,
         DataHelper $dataHelper,
         UpdateNotifier $updateNotifier,
         array $data = []
@@ -72,7 +67,6 @@ class Status extends Template implements RendererInterface
         $this->_resourceConfig = $resourceConfig;
         $this->_cacheTypeList = $cacheTypeList;
         $this->_cacheFrontendPool = $cacheFrontendPool;
-        $this->_serializer = $serializer;
         $this->_dataHelper = $dataHelper;
         $this->_updateNotifier = $updateNotifier;
 
@@ -216,11 +210,21 @@ class Status extends Template implements RendererInterface
             $data = [];
             $data['accountInfo'] = $this->_getAccountInfo();
             $data['moduleInfo'] = $this->_dataHelper->getModuleInfo();
-            $cache->save($this->_serializer->serialize($data), $cacheId, [], self::CACHE_LIFETIME_SECONDS);
+
+            $payload = json_encode($data);
+
+            if ($payload === false) {
+                $this->_logger->warning('Unable to encode Postcode.eu status cache payload.');
+
+                return $data;
+            }
+
+            $cache->save($payload, $cacheId, [], self::CACHE_LIFETIME_SECONDS);
+
             return $data;
         }
 
-        $data = $this->_serializer->unserialize($cachedData);
+        $data = json_decode($cachedData, true);
 
         if (!is_array($data)) {
             $this->_logger->warning('Ignoring malformed Postcode.eu status cache payload.');
