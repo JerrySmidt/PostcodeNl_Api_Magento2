@@ -45,6 +45,7 @@ class StoreConfigHelperTest extends TestCase
             StoreConfigHelper::PATH['allow_pobox_shipping'] => '1',
             StoreConfigHelper::PATH['change_fields_position'] => '1',
             StoreConfigHelper::PATH['split_street_values'] => '1',
+            StoreConfigHelper::PATH['residence_line_countries'] => 'fr, es ,, it',
         ]);
 
         $jsinit = $helper->getJsinit();
@@ -60,6 +61,7 @@ class StoreConfigHelperTest extends TestCase
                 'change_fields_position',
                 'allow_pobox_shipping',
                 'split_street_values',
+                'residence_line_countries',
             ],
             array_keys($jsinit)
         );
@@ -70,6 +72,7 @@ class StoreConfigHelperTest extends TestCase
         $this->assertTrue($jsinit['allow_pobox_shipping']);
         $this->assertTrue($jsinit['change_fields_position']);
         $this->assertTrue($jsinit['split_street_values']);
+        $this->assertSame(['FR', 'ES', 'IT'], $jsinit['residence_line_countries']);
         $this->assertSame(
             [
                 'dutchAddressLookup' => 'https://example.com/postcode-eu/V1/nl/address/{postcode}/{houseNumber}?form_key=FORMKEY',
@@ -468,6 +471,32 @@ class StoreConfigHelperTest extends TestCase
         return [
             'invalid json' => ['not-json'],
             'scalar json' => ['"hello"'],
+        ];
+    }
+
+    #[Test]
+    #[DataProvider('residenceLineCountriesProvider')]
+    public function residence_line_countries_are_parsed_and_normalised(?string $value, array $expected): void
+    {
+        $helper = $this->createHelper([
+            StoreConfigHelper::PATH['residence_line_countries'] => $value,
+        ]);
+
+        $this->assertSame($expected, $helper->getResidenceLineCountries());
+    }
+
+    /**
+     * @return array<string, array{string|null, array<string>}>
+     */
+    public static function residenceLineCountriesProvider(): array
+    {
+        return [
+            'default list' => ['IT,ES,FR', ['IT', 'ES', 'FR']],
+            'whitespace and case' => [' it , es ,, fr ', ['IT', 'ES', 'FR']],
+            'duplicates removed' => ['IT,it,ES', ['IT', 'ES']],
+            'single country' => ['fr', ['FR']],
+            'empty string disables' => ['', []],
+            'missing value disables' => [null, []],
         ];
     }
 

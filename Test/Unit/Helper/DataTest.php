@@ -123,6 +123,40 @@ class DataTest extends TestCase
     }
 
     #[Test]
+    #[DataProvider('residenceLineDisabledProvider')]
+    public function residence_line_disabled_state_follows_gates(
+        bool $enabled,
+        string $showHideAddressFields,
+        array $residenceLineCountries,
+        bool $expected
+    ): void {
+        $helper = $this->createHelper([
+            'storeConfigHelper' => $this->createConfigStub([
+                'enabled' => $enabled,
+                'show_hide_address_fields' => $showHideAddressFields,
+                'residence_line_countries' => $residenceLineCountries,
+            ]),
+        ]);
+
+        $this->assertSame($expected, $helper->isResidenceLineDisabled());
+    }
+
+    /**
+     * @return array<string, array{bool, string, list<string>, bool}>
+     */
+    public static function residenceLineDisabledProvider(): array
+    {
+        return [
+            'module disabled' => [false, ShowHideAddressFields::FORMAT, ['FR'], true],
+            'fields shown' => [true, ShowHideAddressFields::SHOW, ['FR'], true],
+            'fields hidden' => [true, ShowHideAddressFields::HIDE, ['FR'], true],
+            'fields disabled' => [true, ShowHideAddressFields::DISABLE, ['FR'], true],
+            'no countries configured' => [true, ShowHideAddressFields::FORMAT, [], true],
+            'fields formatted with countries' => [true, ShowHideAddressFields::FORMAT, ['FR'], false],
+        ];
+    }
+
+    #[Test]
     #[DataProvider('autofillBypassDisabledProvider')]
     public function autofill_bypass_disabled_state_follows_gates(
         bool $enabled,
@@ -353,6 +387,7 @@ class DataTest extends TestCase
      *     nl_input_behavior?: string,
      *     show_hide_address_fields?: string,
      *     allow_autofill_bypass?: bool,
+     *     residence_line_countries?: list<string>,
      *     module_version?: string
      * } $config
      */
@@ -367,6 +402,7 @@ class DataTest extends TestCase
         $helper = $this->createStub(StoreConfigHelper::class);
         $helper->method('isEnabled')->willReturn($config['enabled'] ?? true);
         $helper->method('getEnabledCountries')->willReturn($config['enabled_countries'] ?? ['NL']);
+        $helper->method('getResidenceLineCountries')->willReturn($config['residence_line_countries'] ?? ['FR']);
         $helper->method('isSetFlag')->willReturn($config['allow_autofill_bypass'] ?? true);
         $helper->method('getValue')->willReturnCallback(
             fn (string $path) => $values[$path] ?? null

@@ -78,6 +78,22 @@ class Data extends AbstractHelper
     }
 
     /**
+     * Check if the residence line component is disabled.
+     *
+     * The residence line is only needed in "format" mode, which won't let the user edit the address fields.
+     *
+     * @access public
+     * @param int|string|null $storeId
+     * @return bool
+     */
+    public function isResidenceLineDisabled($storeId = null): bool
+    {
+        return
+            $this->isFormattedOutputDisabled($storeId)
+            || [] === $this->_storeConfigHelper->getResidenceLineCountries($storeId);
+    }
+
+    /**
      * Check if Dutch API component is disabled.
      *
      * @access public

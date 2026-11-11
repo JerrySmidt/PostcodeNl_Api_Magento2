@@ -55,6 +55,12 @@ define([
                 }
             }
 
+            const residenceLine = result.residenceLine?.trim();
+
+            if (residenceLine) {
+                streetLines = [residenceLine, ...streetLines];
+            }
+
             // Street children may not yet be available at this point, so value needs to be set asynchronously.
             this.street().asyncSetValues(...streetLines);
 

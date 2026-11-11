@@ -111,12 +111,24 @@ define([
             }
 
             const setValue = (input, value) => {
-                input.value = value;
-                input.dispatchEvent(new Event('change', {bubbles: true}));
-            };
+                    input.value = value;
+                    input.dispatchEvent(new Event('change', {bubbles: true}));
+                },
+                residenceLine = result.residenceLine?.trim(),
+                streetLines = [...result.streetLines],
+                lineCount = this.inputs.street.length;
 
-            for (let i = 0; i < result.streetLines.length; i++) {
-                setValue(this.inputs.street[i], result.streetLines[i]);
+            if (residenceLine) {
+                streetLines.unshift(residenceLine);
+            }
+
+            // Join any extra lines into the last available street input.
+            if (streetLines.length > lineCount) {
+                streetLines.push(streetLines.splice(lineCount - 1).join(' '));
+            }
+
+            for (let i = 0; i < streetLines.length; i++) {
+                setValue(this.inputs.street[i], streetLines[i]);
             }
 
             setValue(this.inputs.city, result.address.locality);
