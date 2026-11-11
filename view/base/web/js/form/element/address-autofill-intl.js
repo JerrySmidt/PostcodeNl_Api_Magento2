@@ -127,8 +127,10 @@ define([
                 streetLines.push(streetLines.splice(lineCount - 1).join(' '));
             }
 
-            for (let i = 0; i < streetLines.length; i++) {
-                setValue(this.inputs.street[i], streetLines[i]);
+            // Write every street input, so lines left over from a previous or longer address are cleared
+            // (e.g. after removing the residence line).
+            for (let i = 0; i < lineCount; i++) {
+                setValue(this.inputs.street[i], streetLines[i] ?? '');
             }
 
             setValue(this.inputs.city, result.address.locality);
